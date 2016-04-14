@@ -27,6 +27,7 @@
 #include <linux/if_tun.h>
 #include <getopt.h>
 #include <sys/ioctl.h>
+#include "crypto.c"
 
 #define PERROR(x) do { perror(x); exit(1); } while (0)
 #define ERROR(x, args ...) do { fprintf(stderr,"ERROR:" x, ## args); exit(1); } while (0)
@@ -161,7 +162,34 @@ int main(int argc, char *argv[])
 			if (DEBUG) write(1,">", 1);
 			l = read(fd, buf, sizeof(buf));
 			if (l < 0) PERROR("read");
-			if (sendto(s, buf, l, 0, (struct sockaddr *)&from, fromlen) < 0) PERROR("sendto");
+
+
+
+
+
+
+			printf("before encryption");
+			print_buffer(buf, l);
+			char newbuf[2000];
+			int outlen;
+
+			unsigned char iv[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+			unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+			do_crypt(buf, l, newbuf, &outlen, key, iv, 1);
+
+			printf("after encryption");
+			print_buffer(newbuf, outlen);
+			if (sendto(s, newbuf, outlen, 0, (struct sockaddr *)&from, fromlen) < 0) PERROR("sendto");
+
+
+
+
+
+
+			//if (sendto(s, buf, l, 0, (struct sockaddr *)&from, fromlen) < 0) PERROR("sendto");
             
 		} else {
         // this is to fetch the packet data from another VPN app and put it into the TUN/TAP 
@@ -169,10 +197,35 @@ int main(int argc, char *argv[])
 			if (DEBUG) write(1,"<", 1);
 			l = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&sout, &soutlen);
 			if ((sout.sin_addr.s_addr != from.sin_addr.s_addr) || (sout.sin_port != from.sin_port))
-				printf("Got packet from  %s:%i instead of %s:%i\n", 
+				printf("Got packet from  %s:%i instead of %s:%i\n",
 				       inet_ntoa(sout.sin_addr.s_addr), ntohs(sout.sin_port),
 				       inet_ntoa(from.sin_addr.s_addr), ntohs(from.sin_port));
-			if (write(fd, buf, l) < 0) PERROR("write");
+
+
+
+
+
+
+			printf("before decryption");
+			print_buffer(buf, l);
+			char newbuf[2000];
+			int outlen;
+
+			unsigned char iv[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+			unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+			do_crypt(buf, l, newbuf, &outlen, key, iv, 0);
+
+			printf("after decryption");
+			print_buffer(newbuf, outlen);
+			if (write(fd, newbuf, outlen) < 0) PERROR("write");
+
+
+
+
+			//if (write(fd, buf, l) < 0) PERROR("write");
 		}
 	}
 }
