@@ -25,9 +25,9 @@
 ////
 ////
 ////	// encrypt
-////	do_crypt(inbuf, inlen, outbuf, &outlen, key, iv, 1);
+////	do_aes_128_cbc_crypt(inbuf, inlen, outbuf, &outlen, key, iv, 1);
 ////	// decrypt
-////	do_crypt(outbuf, outlen, outbuf2, &outlen2, key, iv, 0);
+////	do_aes_128_cbc_crypt(outbuf, outlen, outbuf2, &outlen2, key, iv, 0);
 ////
 ////
 ////	print_buffer(outbuf2, outlen2);
@@ -39,7 +39,7 @@
 ////	int inlen = sizeof(inbuf);
 ////	char outbuf[16];
 ////	int* outlen;
-////	calculate_hash(inbuf, inlen, outbuf, &outlen);
+////	calculate_md5_hash(inbuf, inlen, outbuf, &outlen);
 ////	print_buffer(outbuf, outlen);
 //
 //
@@ -51,14 +51,14 @@
 ////	int inlen = sizeof(inbuf);
 ////	unsigned char outbuf[1024];
 ////	int outlen = 0;
-////	calculate_hmac(inbuf, inlen, outbuf, &outlen, key);
+////	calculate_sha256_hmac(inbuf, inlen, outbuf, &outlen, key);
 ////	print_buffer(outbuf, outlen);
 //
 //
 //	return 0;
 //}
 
-int do_crypt(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen,
+int do_aes_128_cbc_crypt(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen,
 		unsigned char key[], unsigned char iv[], int do_encrypt) {
 	int outlen1, outlen2;
 	EVP_CIPHER_CTX ctx;
@@ -87,11 +87,11 @@ int do_crypt(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outl
 	return 1;
 }
 
-calculate_hmac(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen, unsigned char key[]) {
+calculate_sha256_hmac(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen, unsigned char key[]) {
 	HMAC(EVP_sha256(), key, 16, inbuf, inlen, outbuf, outlen);
 }
 
-void calculate_hash(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen) {
+void calculate_md5_hash(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen) {
 	EVP_MD_CTX *mdctx;
 	const EVP_MD *md;
 	OpenSSL_add_all_digests();
@@ -107,7 +107,7 @@ void calculate_hash(unsigned char inbuf[], int inlen, unsigned char outbuf[], in
 
 void print_buffer(unsigned char buf[], int buflen) {
 	int i;
-	printf("\n--------------\n");
+	printf("------------------");
 	for (i = 0; i < buflen; i++) {
 		if (i % 16 == 0) {
 			printf("\n");
@@ -116,5 +116,23 @@ void print_buffer(unsigned char buf[], int buflen) {
 		}
 		printf("%02X", buf[i]);
 	}
-	printf("\n--------------\n");
+	printf("\n------------------\n \n");
+}
+
+int compare_buffers(unsigned char buf1[], unsigned char buf2[], int buflen) {
+	int result = 1;  // 0 means false, 1 means true
+	int i;
+	for (i = 0; i < buflen; i++) { // compare the first 24 bits (3 bytes)
+		if (buf1[i] != buf2[i]) {
+			result = 0;
+			return result;
+		}
+	}
+	return result;
+}
+
+void generate_random_number(unsigned char generated_number[], int len){
+	FILE* random = fopen("/dev/urandom", "r");
+	fread(generated_number, sizeof(unsigned char)*len, 1, random);
+	fclose(random);
 }
