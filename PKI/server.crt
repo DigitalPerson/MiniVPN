@@ -1,0 +1,60 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4096 (0x1000)
+    Signature Algorithm: sha1WithRSAEncryption
+        Issuer: C=US, ST=NY, L=Syracuse, O=MiniVPNCA, CN=MiniVPNCA
+        Validity
+            Not Before: Apr 19 03:21:16 2016 GMT
+            Not After : Apr 19 03:21:16 2017 GMT
+        Subject: C=US, ST=NY, L=Syracuse, O=MiniVPNServer, CN=MiniVPNServer
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (1024 bit)
+                Modulus:
+                    00:ee:e4:7d:81:df:87:09:db:33:31:f8:eb:93:a4:
+                    bc:4c:3f:42:cf:ca:42:37:18:08:b6:3f:79:06:40:
+                    1c:ea:74:55:28:58:8b:72:ad:8f:f6:de:2b:27:cc:
+                    71:7c:19:7e:18:6b:28:8f:ce:df:5b:b8:9e:d6:c0:
+                    b8:75:62:07:5f:b3:ec:f0:8b:38:ca:49:b8:3f:1e:
+                    93:88:f5:6e:56:a7:02:dc:7e:a5:3a:d7:6c:6d:8b:
+                    d3:f5:34:42:83:8b:b7:b6:af:af:94:88:56:d4:15:
+                    7f:cd:c5:7d:de:72:a6:e3:a3:93:e3:8c:a9:56:e8:
+                    8c:e8:86:72:99:48:b1:0d:15
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Comment: 
+                OpenSSL Generated Certificate
+            X509v3 Subject Key Identifier: 
+                4F:F0:19:AD:8F:5D:79:7F:A0:9A:46:F5:0A:EC:F8:DF:AE:AA:62:65
+            X509v3 Authority Key Identifier: 
+                keyid:4F:4B:5C:84:4A:AD:E9:71:CF:2E:25:8D:C0:71:59:6D:BC:AF:88:E5
+
+    Signature Algorithm: sha1WithRSAEncryption
+         57:2b:16:6e:56:88:db:f1:57:41:61:94:67:41:b4:64:15:0a:
+         f1:01:04:82:cc:ae:a0:7b:02:e2:b8:34:9e:21:a4:5d:f3:24:
+         85:2c:cf:6e:7e:1e:44:ca:f9:95:66:18:5a:8e:6d:2f:9b:83:
+         9a:55:98:87:27:53:29:07:da:4d:4c:97:2b:bc:9e:55:8b:ad:
+         e0:8f:20:6a:27:92:75:ae:fa:d1:82:bb:81:7b:ef:e6:6e:e2:
+         40:48:00:bb:ae:21:07:c4:06:69:d1:77:07:0f:c3:ce:58:b2:
+         a0:e1:2d:3f:bf:aa:c6:5a:16:76:de:5e:9e:d6:fe:bc:ce:94:
+         c6:8d
+-----BEGIN CERTIFICATE-----
+MIICpDCCAg2gAwIBAgICEAAwDQYJKoZIhvcNAQEFBQAwVTELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgMAk5ZMREwDwYDVQQHDAhTeXJhY3VzZTESMBAGA1UECgwJTWluaVZQ
+TkNBMRIwEAYDVQQDDAlNaW5pVlBOQ0EwHhcNMTYwNDE5MDMyMTE2WhcNMTcwNDE5
+MDMyMTE2WjBdMQswCQYDVQQGEwJVUzELMAkGA1UECAwCTlkxETAPBgNVBAcMCFN5
+cmFjdXNlMRYwFAYDVQQKDA1NaW5pVlBOU2VydmVyMRYwFAYDVQQDDA1NaW5pVlBO
+U2VydmVyMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDu5H2B34cJ2zMx+OuT
+pLxMP0LPykI3GAi2P3kGQBzqdFUoWItyrY/23isnzHF8GX4YayiPzt9buJ7WwLh1
+Ygdfs+zwizjKSbg/HpOI9W5WpwLcfqU612xti9P1NEKDi7e2r6+UiFbUFX/NxX3e
+cqbjo5PjjKlW6IzohnKZSLENFQIDAQABo3sweTAJBgNVHRMEAjAAMCwGCWCGSAGG
++EIBDQQfFh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTAdBgNVHQ4EFgQU
+T/AZrY9deX+gmkb1Cuz4366qYmUwHwYDVR0jBBgwFoAUT0tchEqt6XHPLiWNwHFZ
+bbyviOUwDQYJKoZIhvcNAQEFBQADgYEAVysWblaI2/FXQWGUZ0G0ZBUK8QEEgsyu
+oHsC4rg0niGkXfMkhSzPbn4eRMr5lWYYWo5tL5uDmlWYhydTKQfaTUyXK7yeVYut
+4I8gaieSda760YK7gXvv5m7iQEgAu64hB8QGadF3Bw/DzliyoOEtP7+qxloWdt5e
+ntb+vM6Uxo0=
+-----END CERTIFICATE-----
