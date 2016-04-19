@@ -3,6 +3,8 @@
 #include <string.h>
 #include <openssl/evp.h>
 
+#define BUFFER_SIZE 100
+
 //int main(void) {
 //
 ////	// ------------------------ Test Encryption ------------------------
@@ -105,6 +107,34 @@ void calculate_md5_hash(unsigned char inbuf[], int inlen, unsigned char outbuf[]
 	EVP_cleanup();
 }
 
+void calculate_sha256_hash(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen) {
+	EVP_MD_CTX *mdctx;
+	const EVP_MD *md;
+	OpenSSL_add_all_digests();
+	md = EVP_get_digestbyname("sha256");
+	mdctx = EVP_MD_CTX_create();
+	EVP_DigestInit_ex(mdctx, md, NULL);
+	EVP_DigestUpdate(mdctx, inbuf, inlen);
+	EVP_DigestFinal_ex(mdctx, outbuf, outlen);
+	EVP_MD_CTX_destroy(mdctx);
+	/* Call this once before exit. */
+	EVP_cleanup();
+}
+
+void calculate_sha256_hash_with_salt(unsigned char salt[],
+		int saltlen, unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen) {
+	unsigned char new_inbuf[BUFFER_SIZE];
+	int index = 0;
+	memcpy(&new_inbuf[index], &salt[0], saltlen);
+	index += saltlen;
+	memcpy(&new_inbuf[index], &inbuf[0], inlen);
+	index += inlen;
+	int new_inlen = index;
+	calculate_sha256_hash(new_inbuf, new_inlen, outbuf, outlen);
+
+}
+
+
 void print_buffer(unsigned char buf[], int buflen) {
 	int i;
 	printf("------------------");
@@ -119,10 +149,24 @@ void print_buffer(unsigned char buf[], int buflen) {
 	printf("\n------------------\n \n");
 }
 
+void print_buffer_with_title(unsigned char buf[], int buflen, char* title) {
+	int i;
+	printf("---------- %s ----------", title);
+	for (i = 0; i < buflen; i++) {
+		if (i % 16 == 0) {
+			printf("\n");
+		} else if (i > 0) {
+			printf(":");
+		}
+		printf("%02X", buf[i]);
+	}
+	printf("\n---------- %s ----------\n \n", title);
+}
+
 int compare_buffers(unsigned char buf1[], unsigned char buf2[], int buflen) {
 	int result = 1;  // 0 means false, 1 means true
 	int i;
-	for (i = 0; i < buflen; i++) { // compare the first 24 bits (3 bytes)
+	for (i = 0; i < buflen; i++) {
 		if (buf1[i] != buf2[i]) {
 			result = 0;
 			return result;
@@ -135,4 +179,20 @@ void generate_random_number(unsigned char generated_number[], int len){
 	FILE* random = fopen("/dev/urandom", "r");
 	fread(generated_number, sizeof(unsigned char)*len, 1, random);
 	fclose(random);
+}
+int find_char_in_string(char* str, char c){
+	int result = -1;
+	const char *ptr = strchr(str, c);
+	if(ptr) {
+	   result = ptr - str;
+	}
+	return result;
+}
+
+void convert_hex_string_to_bytes_array (char* str, unsigned char buf[]){
+	int strln = strlen(str);
+	int i;
+	for (i = 0; i < (strln / 2); i++) {
+		sscanf(str + 2*i, "%02x", &buf[i]);
+	}
 }

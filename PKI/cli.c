@@ -14,17 +14,22 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include "../crypto.c"
 
 #define CACERT "ca.crt"
 #define SERVER_COMMON_NAME "MiniVPNServer"
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 1111
+#define KEY_LEN 16
+#define BUFFER_SIZE 4096
+#define BUFFER_SIZE_SMALL 50
+#define SEPARATOR ":"
+#define SEPARATOR_LEN 1
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
@@ -36,7 +41,7 @@ int main() {
 	struct sockaddr_in sa;
 	SSL_CTX* ctx;
 	SSL* ssl;
-	char buf[4096];
+	char buf[BUFFER_SIZE];
 	SSL_METHOD *meth;
 
 	SSLeay_add_ssl_algorithms();
@@ -84,16 +89,49 @@ int main() {
 	/* --------------------------------------------------- */
 	/* DATA EXCHANGE - Send a message and receive a reply. */
 
-	char key[] = "my secret keeyyyyyyyy";
-	int key_len = sizeof(key);
+	// Generate a secret key for the UDP tunnel encryption
+	unsigned char key[KEY_LEN];
+	generate_random_number(key, KEY_LEN);
 
-	err = SSL_write(ssl, key, key_len);
+
+	// Get username and password from the user
+//	char username [] = "bilalo89";
+//	char password [] = "bilal";
+	char username [BUFFER_SIZE_SMALL];
+	printf("Enter username: ");
+	gets(username);
+	char password[BUFFER_SIZE_SMALL];
+	printf("Enter password: ");
+	gets(password);
+	int username_len = strlen(username);
+	int password_len = strlen(password);
+
+
+
+	// Put everything together in one buffer to send it to the server
+	int index = 0;
+	memcpy(&buf[index], &key[0], KEY_LEN);
+	index += KEY_LEN;
+	memcpy(&buf[index], &username[0], username_len);
+	index += username_len;
+	memcpy(&buf[index], &SEPARATOR[0], SEPARATOR_LEN);
+	index += SEPARATOR_LEN;
+	memcpy(&buf[index], &password[0], password_len);
+	index += password_len;
+	int buf_len = index;
+
+
+
+	err = SSL_write(ssl, buf, buf_len);
 	CHK_SSL(err);
+	memset(buf, 0, BUFFER_SIZE);
 
 	err = SSL_read(ssl, buf, sizeof(buf) - 1);
 	CHK_SSL(err);
 	buf[err] = '\0';
-	printf("Got %d chars:'%s'\n", err, buf);
+	printf("%s\n", buf);
+	memset(buf, 0, BUFFER_SIZE);
+
 	SSL_shutdown(ssl); /* send SSL/TLS close_notify */
 
 	/* Clean up. */
