@@ -5,6 +5,7 @@
  Simplified to be even more minimal
  12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -144,7 +145,7 @@ int main() {
 	if (user_pass_verified == 0){
 		message = "Wrong username or password.";
 	} else {
-		message = "Connection successful.";
+		message = "TCP Connection successful.";
 	}
 	printf("%s \n", message);
 
@@ -163,7 +164,20 @@ int main() {
 		exit(1);
 	}
 
-	start(1, NULL, key);
+	//start(1, NULL);
+
+	pthread_t thread;
+	int rc;
+
+
+	rc = pthread_create(&thread, NULL, start_server, NULL);
+	if (rc){
+		printf("ERROR; return code from pthread_create() is %d\n", rc);
+		exit(-1);
+	}
+
+	/* Last thing that main() should do */
+	pthread_exit(NULL);
 
 	return 0;
 }

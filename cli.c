@@ -5,6 +5,7 @@
  Simplified to be even more minimal
  12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
 
+#include <pthread.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <memory.h>
@@ -149,7 +150,24 @@ int main() {
 	SSL_CTX_free(ctx);
 
 
-	start(2, SERVER_IP, key);
+	sleep(2);
+	//start(2, "10.0.2.13");
+
+
+	pthread_t thread;
+	int rc;
+
+
+	rc = pthread_create(&thread, NULL, start_client, NULL);
+	if (rc){
+		printf("ERROR; return code from pthread_create() is %d\n", rc);
+		exit(-1);
+	}
+
+	/* Last thing that main() should do */
+	pthread_exit(NULL);
+
+
 
 	return 0;
 }

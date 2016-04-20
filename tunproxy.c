@@ -51,16 +51,28 @@ unsigned char calulated_hmac[HMAC_LEN];
 
 
 //int main(int argc, char *argv[]){
-//	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+//
 //	char *mode = argv[1];
 //	if (strcmp(mode, "s") == 0){
 //		printf("Server \n");
-//		start(1, NULL, key);
+//		start(1, NULL);
 //	} else {
 //		printf("Client \n");
-//		start(2, "10.0.2.13", key);
+//		start(2, "10.0.2.13");
 //	}
 //}
+
+void *start_server(){
+	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	start(1, NULL, key);
+	pthread_exit(NULL);
+}
+
+void *start_client(){
+	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	start(2, "10.0.2.13", key);
+	pthread_exit(NULL);
+}
 
 
 
@@ -70,7 +82,7 @@ unsigned char calulated_hmac[HMAC_LEN];
 //	exit(0);
 //}
 
-void start(int my_mode, char* server_ip, unsigned char key[])
+void start(int my_mode, char* server_ip, unsigned char key [])
 {
 
 	struct sockaddr_in sin, sout, from;
@@ -81,7 +93,7 @@ void start(int my_mode, char* server_ip, unsigned char key[])
 	fd_set fdset;
 	int MODE = 0;
 	int TUNMODE = IFF_TUN;
-	int DEBUG = 0;
+	int DEBUG = 1;
 
 
 	if (my_mode == 1){
@@ -181,7 +193,7 @@ void start(int my_mode, char* server_ip, unsigned char key[])
 		if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD) != 0))
 			ERROR("Bad magic word for peer\n");
 	}
-	printf("Connection established\n");
+	printf("UDP Connection established\n");
            
            
 /*
@@ -242,6 +254,7 @@ void start(int my_mode, char* server_ip, unsigned char key[])
 
 void process_buffer_before_sending(unsigned char* buf, int buf_len, unsigned char key[] ,unsigned char modified_buf[], int* modified_buf_len){
 
+	printf("---------------------- Sending packet ---------------------- \n");
 	int index = 0;
 
 	// Create the IV
@@ -272,6 +285,7 @@ void process_buffer_before_sending(unsigned char* buf, int buf_len, unsigned cha
 	       
 int process_buffer_after_receiving(unsigned char* buf, int buf_len, unsigned char key[], unsigned char original_buf[], int* original_buf_len){
 
+	printf("---------------------- Receiving packet ---------------------- \n");
 	int index = 0;
 
 	// Get the IV
