@@ -34,9 +34,9 @@
 #define BUFFER_SIZE 2000
 #define HMAC_LEN 32
 #define IV_LEN 16
+#define UDP_PORT 55555
 
 char MAGIC_WORD[] = "Wazaaaaaaaaaaahhhh !";
-unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 unsigned char original_buf[BUFFER_SIZE];
 int original_buf_len;
 unsigned char modified_buf[BUFFER_SIZE];
@@ -50,57 +50,79 @@ int modified_buf_without_hmac_len;
 unsigned char calulated_hmac[HMAC_LEN];
 
 
+//int main(int argc, char *argv[]){
+//	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+//	char *mode = argv[1];
+//	if (strcmp(mode, "s") == 0){
+//		printf("Server \n");
+//		start(1, NULL, key);
+//	} else {
+//		printf("Client \n");
+//		start(2, "10.0.2.13", key);
+//	}
+//}
 
-void usage()
-{
-	fprintf(stderr, "Usage: tunproxy [-s port|-c targetip:port] [-e]\n");
-	exit(0);
-}
 
-int main(int argc, char *argv[])
+
+//void usage()
+//{
+//	fprintf(stderr, "Usage: tunproxy [-s port|-c targetip:port] [-e]\n");
+//	exit(0);
+//}
+
+void start(int my_mode, char* server_ip, unsigned char key[])
 {
+
 	struct sockaddr_in sin, sout, from;
 	struct ifreq ifr;
 	int fd, s, fromlen, soutlen, port, PORT, buf_len;
 	char c, *p, *ip;
 	char buf[BUFFER_SIZE];
 	fd_set fdset;
-	
-	
+	int MODE = 0;
+	int TUNMODE = IFF_TUN;
+	int DEBUG = 0;
 
 
-
-
-	int MODE = 0, TUNMODE = IFF_TUN, DEBUG = 0;
-
-	while ((c = getopt(argc, argv, "s:c:ehd")) != -1) {
-		switch (c) {
-		case 'h':
-			usage();
-		case 'd':
-			DEBUG++;
-			break;
-		case 's':
-			MODE = 1;
-			PORT = atoi(optarg);
-			break;
-		case 'c':
-			MODE = 2;
-			p = memchr(optarg,':',16);
-			if (!p) ERROR("invalid argument : [%s]\n",optarg);
-			*p = 0;
-			ip = optarg;
-			port = atoi(p+1);
-			PORT = 0;
-			break;
-		case 'e':
-			TUNMODE = IFF_TAP;
-			break;
-		default:
-			usage();
-		}
+	if (my_mode == 1){
+		MODE = 1;
+		PORT = UDP_PORT;
 	}
-	if (MODE == 0) usage();
+	if (my_mode == 2){
+		MODE = 2;
+		ip = server_ip;
+		port = UDP_PORT;
+		PORT = 0;
+	}
+
+//	while ((c = getopt(argc, argv, "s:c:ehd")) != -1) {
+//		switch (c) {
+//		case 'h':
+//			usage();
+//		case 'd':
+//			DEBUG++;
+//			break;
+//		case 's':
+//			MODE = 1;
+//			PORT = atoi(optarg);
+//			break;
+//		case 'c':
+//			MODE = 2;
+//			p = memchr(optarg,':',16);
+//			if (!p) ERROR("invalid argument : [%s]\n",optarg);
+//			*p = 0;
+//			ip = optarg;
+//			port = atoi(p+1);
+//			PORT = 0;
+//			break;
+//		case 'e':
+//			TUNMODE = IFF_TAP;
+//			break;
+//		default:
+//			usage();
+//		}
+//	}
+//	if (MODE == 0) usage();
 
 
 /*
@@ -143,9 +165,9 @@ int main(int argc, char *argv[])
 			if (buf_len < 0) PERROR("recvfrom");
 			if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD)) == 0)
 				break;
-			printf("Bad magic word from %s:%i\n", 
-			       inet_ntoa(from.sin_addr.s_addr), ntohs(from.sin_port));
-		} 
+//			printf("Bad magic word from %s:%i\n",
+//			       inet_ntoa(from.sin_addr.s_addr), ntohs(from.sin_port));
+		}
 		buf_len = sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, fromlen);
 		if (buf_len < 0) PERROR("sendto");
 	} else {
@@ -159,8 +181,7 @@ int main(int argc, char *argv[])
 		if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD) != 0))
 			ERROR("Bad magic word for peer\n");
 	}
-	printf("Connection with %s:%i established\n", 
-	       inet_ntoa(from.sin_addr.s_addr), ntohs(from.sin_port));
+	printf("Connection established\n");
            
            
 /*
@@ -184,7 +205,7 @@ int main(int argc, char *argv[])
 
 
 			// Process buffer before sending
-			process_buffer_before_sending(buf, buf_len, modified_buf, &modified_buf_len);
+			process_buffer_before_sending(buf, buf_len, key, modified_buf, &modified_buf_len);
 
 
 			if (sendto(s, modified_buf, modified_buf_len, 0, (struct sockaddr *)&from, fromlen) < 0) PERROR("sendto");
@@ -203,10 +224,9 @@ int main(int argc, char *argv[])
 
 
 			// Process buffer after receiving
-			int hmac_verifieing_result = process_buffer_after_receiving(buf, buf_len, original_buf, &original_buf_len);
+			int hmac_verifieing_result = process_buffer_after_receiving(buf, buf_len, key, original_buf, &original_buf_len);
 
 			if (hmac_verifieing_result == 1){  // do not write the message if HMAC cannot be verified
-				printf("HMAC verified successfully \n \n");
 				if (write(fd, original_buf, original_buf_len) < 0) PERROR("write");
 			} else {
 				printf("Cannot verify the HMAC \n \n");
@@ -220,25 +240,15 @@ int main(int argc, char *argv[])
 
 }
 
-void process_buffer_before_sending(unsigned char* buf, int buf_len, unsigned char modified_buf[], int* modified_buf_len){
-
-	printf("---------------------- Sending packet ---------------------- \n");
+void process_buffer_before_sending(unsigned char* buf, int buf_len, unsigned char key[] ,unsigned char modified_buf[], int* modified_buf_len){
 
 	int index = 0;
 
-	// Get the original buffer
-	printf("Original buffer \n");
-	print_buffer(buf, buf_len);
-
 	// Create the IV
 	generate_random_number(iv, IV_LEN);
-	printf("IV \n");
-	print_buffer(iv, IV_LEN);
 
 	// Form the encrypted buffer (encrypting the original buffer)
 	do_aes_128_cbc_crypt(buf, buf_len, encrypted_buf, &encrypted_buf_len, key, iv, 1);
-	printf("Encrypted buffer \n");
-	print_buffer(encrypted_buf, encrypted_buf_len);
 
 	// Put everything needed to calculate the HMAC in one buffer
 	index = 0;
@@ -250,9 +260,6 @@ void process_buffer_before_sending(unsigned char* buf, int buf_len, unsigned cha
 
 	// Calculate the HMAC
 	calculate_sha256_hmac(modified_buf_without_hmac, modified_buf_without_hmac_len, hmac, NULL, key);
-	printf("HMAC \n");
-	print_buffer(hmac, HMAC_LEN);
-
 
 	// Put everything together in a new buffer
 	index = 0;
@@ -261,48 +268,32 @@ void process_buffer_before_sending(unsigned char* buf, int buf_len, unsigned cha
 	memcpy(&modified_buf[index], &hmac[0], HMAC_LEN);
 	index += HMAC_LEN;
 	*modified_buf_len = index;
-	printf("Modified buffer \n");
-	print_buffer(modified_buf, *modified_buf_len);
 }
 	       
-int process_buffer_after_receiving(unsigned char* buf, int buf_len, unsigned char original_buf[], int* original_buf_len){
+int process_buffer_after_receiving(unsigned char* buf, int buf_len, unsigned char key[], unsigned char original_buf[], int* original_buf_len){
 
-	printf("---------------------- Receiving packet ---------------------- \n");
 	int index = 0;
-
-	// get the modified buffer
-	printf("Modified buffer \n");
-	print_buffer(buf, buf_len);
 
 	// Get the IV
 	index = 0;
 	memcpy(&iv[0], &buf[index], IV_LEN);
 	index += IV_LEN;
-	printf("IV \n");
-	print_buffer(iv, IV_LEN);
 
 	// Get the encrypted buffer
 	encrypted_buf_len = buf_len -IV_LEN -HMAC_LEN ;
 	memcpy(&encrypted_buf[0], &buf[index], encrypted_buf_len);
 	index += encrypted_buf_len;
-	printf("Encrypted buffer \n");
-	print_buffer(encrypted_buf, encrypted_buf_len);
 
 	// Get the HMAC
 	memcpy(&hmac[0], &buf[index], HMAC_LEN);
 	index += HMAC_LEN;
-	printf("HMAC \n");
-	print_buffer(hmac, HMAC_LEN);
 
 	// Get the original buffer
 	do_aes_128_cbc_crypt(encrypted_buf, encrypted_buf_len, original_buf, original_buf_len, key, iv, 0);
-	printf("Original buffer \n");
-	print_buffer(original_buf, *original_buf_len);
 
 	// Put everything needed to calculate the HMAC in one buffer
 	modified_buf_without_hmac_len = buf_len - HMAC_LEN;
 	memcpy(&modified_buf_without_hmac[0], &buf[0], modified_buf_without_hmac_len);
-
 
 	// Verify the HMAC
 	calculate_sha256_hmac(modified_buf_without_hmac, modified_buf_without_hmac_len, calulated_hmac, NULL, key);

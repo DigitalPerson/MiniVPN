@@ -21,7 +21,7 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "../crypto.c"
+#include "tunproxy.c"
 
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
@@ -162,6 +162,8 @@ int main() {
 	if (user_pass_verified == 0){
 		exit(1);
 	}
+
+	start(1, NULL, key);
 
 	return 0;
 }

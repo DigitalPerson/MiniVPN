@@ -19,11 +19,11 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "../crypto.c"
+#include "tunproxy.c"
 
 #define CACERT "ca.crt"
 #define SERVER_COMMON_NAME "test.MiniVPNServer.com"
-#define SERVER_IP "127.0.0.1"
+#define SERVER_IP "10.0.2.13"
 #define SERVER_PORT 1111
 #define KEY_LEN 16
 #define BUFFER_SIZE 4096
@@ -147,6 +147,9 @@ int main() {
 	close(sd);
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
+
+
+	start(2, SERVER_IP, key);
 
 	return 0;
 }
