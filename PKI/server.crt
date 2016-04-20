@@ -3,24 +3,24 @@ Certificate:
         Version: 3 (0x2)
         Serial Number: 4096 (0x1000)
     Signature Algorithm: sha1WithRSAEncryption
-        Issuer: C=US, ST=NY, L=Syracuse, O=MiniVPNCA, CN=MiniVPNCA
+        Issuer: C=US, ST=NY, L=Syracuse, O=Internet Widgits Pty Ltd, CN=MiniVPNCA.com
         Validity
-            Not Before: Apr 19 03:21:16 2016 GMT
-            Not After : Apr 19 03:21:16 2017 GMT
-        Subject: C=US, ST=NY, L=Syracuse, O=MiniVPNServer, CN=MiniVPNServer
+            Not Before: Apr 20 01:35:10 2016 GMT
+            Not After : Apr 20 01:35:10 2017 GMT
+        Subject: C=US, ST=NY, L=Syracuse, O=Internet Widgits Pty Ltd, CN=MiniVPNServer.com
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
                 Public-Key: (1024 bit)
                 Modulus:
-                    00:ee:e4:7d:81:df:87:09:db:33:31:f8:eb:93:a4:
-                    bc:4c:3f:42:cf:ca:42:37:18:08:b6:3f:79:06:40:
-                    1c:ea:74:55:28:58:8b:72:ad:8f:f6:de:2b:27:cc:
-                    71:7c:19:7e:18:6b:28:8f:ce:df:5b:b8:9e:d6:c0:
-                    b8:75:62:07:5f:b3:ec:f0:8b:38:ca:49:b8:3f:1e:
-                    93:88:f5:6e:56:a7:02:dc:7e:a5:3a:d7:6c:6d:8b:
-                    d3:f5:34:42:83:8b:b7:b6:af:af:94:88:56:d4:15:
-                    7f:cd:c5:7d:de:72:a6:e3:a3:93:e3:8c:a9:56:e8:
-                    8c:e8:86:72:99:48:b1:0d:15
+                    00:b5:87:df:d0:ae:28:81:b4:5c:be:44:f9:c0:aa:
+                    6f:a5:ea:9b:4f:52:2a:1b:44:3d:1b:34:b0:6a:6e:
+                    9b:08:6f:ca:7b:cc:e6:e5:f4:40:06:a4:0b:38:10:
+                    0c:c9:6e:2a:cb:80:58:76:b0:a3:8e:08:3c:73:b6:
+                    d1:3d:b6:ac:31:e9:bd:1c:22:a3:ab:dd:74:ac:f6:
+                    7f:83:ea:68:e0:e9:48:bd:e5:b4:42:f7:2b:d6:8d:
+                    08:04:4b:0c:fb:f4:be:46:ca:70:44:8d:00:e1:2d:
+                    88:b5:16:bb:1c:f1:55:73:13:47:87:92:e4:e5:9b:
+                    ab:64:2e:39:5f:fc:74:80:bd
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
             X509v3 Basic Constraints: 
@@ -28,33 +28,33 @@ Certificate:
             Netscape Comment: 
                 OpenSSL Generated Certificate
             X509v3 Subject Key Identifier: 
-                4F:F0:19:AD:8F:5D:79:7F:A0:9A:46:F5:0A:EC:F8:DF:AE:AA:62:65
+                4A:38:B7:78:37:B6:0D:B2:35:AB:36:C8:B9:8C:78:90:37:6D:6B:28
             X509v3 Authority Key Identifier: 
-                keyid:4F:4B:5C:84:4A:AD:E9:71:CF:2E:25:8D:C0:71:59:6D:BC:AF:88:E5
+                keyid:7B:24:15:99:8A:CE:F0:C1:50:7B:68:9C:6C:C8:D4:42:5D:F3:06:F1
 
     Signature Algorithm: sha1WithRSAEncryption
-         57:2b:16:6e:56:88:db:f1:57:41:61:94:67:41:b4:64:15:0a:
-         f1:01:04:82:cc:ae:a0:7b:02:e2:b8:34:9e:21:a4:5d:f3:24:
-         85:2c:cf:6e:7e:1e:44:ca:f9:95:66:18:5a:8e:6d:2f:9b:83:
-         9a:55:98:87:27:53:29:07:da:4d:4c:97:2b:bc:9e:55:8b:ad:
-         e0:8f:20:6a:27:92:75:ae:fa:d1:82:bb:81:7b:ef:e6:6e:e2:
-         40:48:00:bb:ae:21:07:c4:06:69:d1:77:07:0f:c3:ce:58:b2:
-         a0:e1:2d:3f:bf:aa:c6:5a:16:76:de:5e:9e:d6:fe:bc:ce:94:
-         c6:8d
+         9b:86:75:d5:af:09:bc:56:aa:89:82:ec:24:11:a6:d7:be:da:
+         40:24:f9:d4:0e:92:3b:30:92:f4:a6:57:de:b8:77:47:44:77:
+         93:cd:76:23:97:49:98:35:75:a2:74:18:12:56:2e:71:96:05:
+         57:25:26:de:df:61:1b:3d:d9:80:98:ea:0c:d6:e2:94:65:55:
+         be:20:9b:13:4c:55:78:a8:f9:34:65:b9:fa:0e:1f:19:59:90:
+         51:58:e9:f0:28:ca:ae:e6:bd:05:e6:e6:9d:43:50:95:1f:c5:
+         b8:38:5d:59:dc:2f:85:e6:4f:22:db:03:a7:7f:71:42:00:cf:
+         04:40
 -----BEGIN CERTIFICATE-----
-MIICpDCCAg2gAwIBAgICEAAwDQYJKoZIhvcNAQEFBQAwVTELMAkGA1UEBhMCVVMx
-CzAJBgNVBAgMAk5ZMREwDwYDVQQHDAhTeXJhY3VzZTESMBAGA1UECgwJTWluaVZQ
-TkNBMRIwEAYDVQQDDAlNaW5pVlBOQ0EwHhcNMTYwNDE5MDMyMTE2WhcNMTcwNDE5
-MDMyMTE2WjBdMQswCQYDVQQGEwJVUzELMAkGA1UECAwCTlkxETAPBgNVBAcMCFN5
-cmFjdXNlMRYwFAYDVQQKDA1NaW5pVlBOU2VydmVyMRYwFAYDVQQDDA1NaW5pVlBO
-U2VydmVyMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDu5H2B34cJ2zMx+OuT
-pLxMP0LPykI3GAi2P3kGQBzqdFUoWItyrY/23isnzHF8GX4YayiPzt9buJ7WwLh1
-Ygdfs+zwizjKSbg/HpOI9W5WpwLcfqU612xti9P1NEKDi7e2r6+UiFbUFX/NxX3e
-cqbjo5PjjKlW6IzohnKZSLENFQIDAQABo3sweTAJBgNVHRMEAjAAMCwGCWCGSAGG
-+EIBDQQfFh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTAdBgNVHQ4EFgQU
-T/AZrY9deX+gmkb1Cuz4366qYmUwHwYDVR0jBBgwFoAUT0tchEqt6XHPLiWNwHFZ
-bbyviOUwDQYJKoZIhvcNAQEFBQADgYEAVysWblaI2/FXQWGUZ0G0ZBUK8QEEgsyu
-oHsC4rg0niGkXfMkhSzPbn4eRMr5lWYYWo5tL5uDmlWYhydTKQfaTUyXK7yeVYut
-4I8gaieSda760YK7gXvv5m7iQEgAu64hB8QGadF3Bw/DzliyoOEtP7+qxloWdt5e
-ntb+vM6Uxo0=
+MIICxjCCAi+gAwIBAgICEAAwDQYJKoZIhvcNAQEFBQAwaDELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgMAk5ZMREwDwYDVQQHDAhTeXJhY3VzZTEhMB8GA1UECgwYSW50ZXJu
+ZXQgV2lkZ2l0cyBQdHkgTHRkMRYwFAYDVQQDDA1NaW5pVlBOQ0EuY29tMB4XDTE2
+MDQyMDAxMzUxMFoXDTE3MDQyMDAxMzUxMFowbDELMAkGA1UEBhMCVVMxCzAJBgNV
+BAgMAk5ZMREwDwYDVQQHDAhTeXJhY3VzZTEhMB8GA1UECgwYSW50ZXJuZXQgV2lk
+Z2l0cyBQdHkgTHRkMRowGAYDVQQDDBFNaW5pVlBOU2VydmVyLmNvbTCBnzANBgkq
+hkiG9w0BAQEFAAOBjQAwgYkCgYEAtYff0K4ogbRcvkT5wKpvpeqbT1IqG0Q9GzSw
+am6bCG/Ke8zm5fRABqQLOBAMyW4qy4BYdrCjjgg8c7bRPbasMem9HCKjq910rPZ/
+g+po4OlIveW0Qvcr1o0IBEsM+/S+RspwRI0A4S2ItRa7HPFVcxNHh5Lk5ZurZC45
+X/x0gL0CAwEAAaN7MHkwCQYDVR0TBAIwADAsBglghkgBhvhCAQ0EHxYdT3BlblNT
+TCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUwHQYDVR0OBBYEFEo4t3g3tg2yNas2yLmM
+eJA3bWsoMB8GA1UdIwQYMBaAFHskFZmKzvDBUHtonGzI1EJd8wbxMA0GCSqGSIb3
+DQEBBQUAA4GBAJuGddWvCbxWqomC7CQRpte+2kAk+dQOkjswkvSmV964d0dEd5PN
+diOXSZg1daJ0GBJWLnGWBVclJt7fYRs92YCY6gzW4pRlVb4gmxNMVXio+TRlufoO
+HxlZkFFY6fAoyq7mvQXm5p1DUJUfxbg4XVncL4XmTyLbA6d/cUIAzwRA
 -----END CERTIFICATE-----

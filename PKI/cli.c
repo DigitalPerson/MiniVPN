@@ -22,7 +22,7 @@
 #include "../crypto.c"
 
 #define CACERT "ca.crt"
-#define SERVER_COMMON_NAME "MiniVPNServer"
+#define SERVER_COMMON_NAME "test.MiniVPNServer.com"
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 1111
 #define KEY_LEN 16
@@ -143,7 +143,7 @@ int main() {
 	return 0;
 }
 
-int verify_common_name(SSL* ssl, char* server_common_name) {
+int verify_common_name(SSL* ssl, char* fetched_server_common_name) {
 	int result = 1;
 	// Get server's certificate (note: beware of dynamic allocation)
 	X509* server_cert = SSL_get_peer_certificate(ssl);
@@ -154,11 +154,18 @@ int verify_common_name(SSL* ssl, char* server_common_name) {
 			index);
 	ASN1_STRING *subject_name_asn1 = X509_NAME_ENTRY_get_data(
 			subject_name_entry);
-	char* fetched_common_name = ASN1_STRING_data(subject_name_asn1);
-	CHK_NULL(fetched_common_name);
-	if (strcmp(server_common_name, fetched_common_name) != 0) {
+	char* cert_server_common_name = ASN1_STRING_data(subject_name_asn1);
+	CHK_NULL(cert_server_common_name);
+
+	// get the last part of fetched server common name
+	int fetched_server_common_name_ln = strlen(fetched_server_common_name);
+	int cert_server_common_name_ln = strlen(cert_server_common_name);
+	const char *last_part_of_fetched_server_common_name = &fetched_server_common_name[fetched_server_common_name_ln - cert_server_common_name_ln];
+
+	// compare the last part of fetched server common name with the name that we got from the certificate
+	if (strcmp(last_part_of_fetched_server_common_name, cert_server_common_name) != 0) {
 		result = 0;
 	}
-	OPENSSL_free(fetched_common_name);
+	OPENSSL_free(cert_server_common_name);
 	return result;
 }
