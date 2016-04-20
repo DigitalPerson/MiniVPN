@@ -36,6 +36,7 @@
 #define SEPARATOR ":"
 #define SEPARATOR_LEN 1
 #define HASH_LN 32
+#define SALT_LN 16
 
 #define CHK_NULL(x) if ((x)==NULL) exit (1)
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
@@ -208,7 +209,6 @@ int verifiy_user_pass(char userpass[], int userpass_len) {
 
 
 		// Convert hex strings to bytes array
-		int SALT_LN = 16;
 		unsigned char salt_shadow_bytearray[SALT_LN];
 		convert_hex_string_to_bytes_array (salt_shadow_string, salt_shadow_bytearray);
 		unsigned char hash_shadow_bytearray[HASH_LN];

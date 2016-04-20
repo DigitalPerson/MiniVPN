@@ -3,7 +3,7 @@
 #include <string.h>
 #include <openssl/evp.h>
 
-#define BUFFER_SIZE 100
+#define BUFFER_SIZE 4096
 
 //int main(void) {
 //
@@ -131,7 +131,6 @@ void calculate_sha256_hash_with_salt(unsigned char salt[],
 	index += inlen;
 	int new_inlen = index;
 	calculate_sha256_hash(new_inbuf, new_inlen, outbuf, outlen);
-
 }
 
 
@@ -190,9 +189,12 @@ int find_char_in_string(char* str, char c){
 }
 
 void convert_hex_string_to_bytes_array (char* str, unsigned char buf[]){
-	int strln = strlen(str);
-	int i;
-	for (i = 0; i < (strln / 2); i++) {
-		sscanf(str + 2*i, "%02x", &buf[i]);
+	const char *pos = str;
+	size_t count = 0;
+	int bufln = strlen(str) / 2 ;
+	for (count = 0; count < bufln; count++) {
+		char element_buf[5] = {'0', 'x', pos[0], pos[1], 0};
+		buf[count] = strtol(element_buf, NULL, 0);
+		pos += 2 * sizeof(char);
 	}
 }
