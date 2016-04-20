@@ -77,6 +77,14 @@ int main() {
 	ssl = SSL_new(ctx);
 	CHK_NULL(ssl);
 	SSL_set_fd(ssl, sd);
+
+	// SSL_connect is reposnisible for verifying:
+	// 1. The effective date
+	// 2. Whether the server certificate is signed by an authorized CA
+	// 4. Whether the server is indeed the machine that the client wants to talk to
+	// (as opposed to a spoofed machine) (ie: server.crt and server.key matches). This also gets checked by the the server code.
+	// Note that the function does not verifiy the common name
+
 	err = SSL_connect(ssl);
 	CHK_SSL(err);
 
