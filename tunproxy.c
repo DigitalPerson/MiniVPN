@@ -28,15 +28,18 @@
 #include <getopt.h>
 #include <sys/ioctl.h>
 #include "crypto.c"
+#include "hmac.c"
+#include "serv.c"
+#include "cli.c"
 
 #define PERROR(x) do { perror(x); exit(1); } while (0)
 #define ERROR(x, args ...) do { fprintf(stderr,"ERROR:" x, ## args); exit(1); } while (0)
 #define BUFFER_SIZE 2000
 #define HMAC_LEN 32
 #define IV_LEN 16
-#define UDP_PORT 55555
 
 char MAGIC_WORD[] = "Wazaaaaaaaaaaahhhh !";
+unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 unsigned char original_buf[BUFFER_SIZE];
 int original_buf_len;
 unsigned char modified_buf[BUFFER_SIZE];
@@ -50,39 +53,14 @@ int modified_buf_without_hmac_len;
 unsigned char calulated_hmac[HMAC_LEN];
 
 
-//int main(int argc, char *argv[]){
-//
-//	char *mode = argv[1];
-//	if (strcmp(mode, "s") == 0){
-//		printf("Server \n");
-//		start(1, NULL);
-//	} else {
-//		printf("Client \n");
-//		start(2, "10.0.2.13");
-//	}
-//}
 
-void *start_server(){
-	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-	start(1, NULL, key);
-	pthread_exit(NULL);
+void usage()
+{
+	fprintf(stderr, "Usage: tunproxy [-s port|-c targetip:port] [-e]\n");
+	exit(0);
 }
 
-void *start_client(){
-	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-	start(2, "10.0.2.13", key);
-	pthread_exit(NULL);
-}
-
-
-
-//void usage()
-//{
-//	fprintf(stderr, "Usage: tunproxy [-s port|-c targetip:port] [-e]\n");
-//	exit(0);
-//}
-
-void start(int my_mode, char* server_ip, unsigned char key [])
+int main(int argc, char *argv[])
 {
 
 	struct sockaddr_in sin, sout, from;
@@ -93,48 +71,36 @@ void start(int my_mode, char* server_ip, unsigned char key [])
 	fd_set fdset;
 	int MODE = 0;
 	int TUNMODE = IFF_TUN;
-	int DEBUG = 1;
+	int DEBUG = 0;
 
-
-	if (my_mode == 1){
-		MODE = 1;
-		PORT = UDP_PORT;
+	while ((c = getopt(argc, argv, "s:c:ehd")) != -1) {
+		switch (c) {
+		case 'h':
+			usage();
+		case 'd':
+			DEBUG++;
+			break;
+		case 's':
+			MODE = 1;
+			PORT = atoi(optarg);
+			break;
+		case 'c':
+			MODE = 2;
+			p = memchr(optarg,':',16);
+			if (!p) ERROR("invalid argument : [%s]\n",optarg);
+			*p = 0;
+			ip = optarg;
+			port = atoi(p+1);
+			PORT = 0;
+			break;
+		case 'e':
+			TUNMODE = IFF_TAP;
+			break;
+		default:
+			usage();
+		}
 	}
-	if (my_mode == 2){
-		MODE = 2;
-		ip = server_ip;
-		port = UDP_PORT;
-		PORT = 0;
-	}
-
-//	while ((c = getopt(argc, argv, "s:c:ehd")) != -1) {
-//		switch (c) {
-//		case 'h':
-//			usage();
-//		case 'd':
-//			DEBUG++;
-//			break;
-//		case 's':
-//			MODE = 1;
-//			PORT = atoi(optarg);
-//			break;
-//		case 'c':
-//			MODE = 2;
-//			p = memchr(optarg,':',16);
-//			if (!p) ERROR("invalid argument : [%s]\n",optarg);
-//			*p = 0;
-//			ip = optarg;
-//			port = atoi(p+1);
-//			PORT = 0;
-//			break;
-//		case 'e':
-//			TUNMODE = IFF_TAP;
-//			break;
-//		default:
-//			usage();
-//		}
-//	}
-//	if (MODE == 0) usage();
+	if (MODE == 0) usage();
 
 
 /*
@@ -152,6 +118,13 @@ void start(int my_mode, char* server_ip, unsigned char key [])
 
 	printf("Allocated interface %s. Configure and use it\n", ifr.ifr_name);
 	
+
+	if (MODE == 1){
+		server();
+	} else if (MODE == 2){
+		client();
+	}
+
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -172,28 +145,27 @@ void start(int my_mode, char* server_ip, unsigned char key [])
 
 
 	if (MODE == 1) {
-		while(1) {
-			buf_len = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
+			while(1) {
+				buf_len = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
+				if (buf_len < 0) PERROR("recvfrom");
+				if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD)) == 0)
+					break;
+				printf("Bad magic word");
+			}
+			buf_len = sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, fromlen);
+			if (buf_len < 0) PERROR("sendto");
+		} else {
+			from.sin_family = AF_INET;
+			from.sin_port = htons(port);
+			inet_aton(ip, &from.sin_addr);
+			buf_len =sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, sizeof(from));
+			if (buf_len < 0) PERROR("sendto");
+			buf_len = recvfrom(s,buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
 			if (buf_len < 0) PERROR("recvfrom");
-			if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD)) == 0)
-				break;
-//			printf("Bad magic word from %s:%i\n",
-//			       inet_ntoa(from.sin_addr.s_addr), ntohs(from.sin_port));
+			if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD) != 0))
+				ERROR("Bad magic word for peer\n");
 		}
-		buf_len = sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, fromlen);
-		if (buf_len < 0) PERROR("sendto");
-	} else {
-		from.sin_family = AF_INET;
-		from.sin_port = htons(port);
-		inet_aton(ip, &from.sin_addr);
-		buf_len =sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, sizeof(from));
-		if (buf_len < 0) PERROR("sendto");
-		buf_len = recvfrom(s,buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
-		if (buf_len < 0) PERROR("recvfrom");
-		if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD) != 0))
-			ERROR("Bad magic word for peer\n");
-	}
-	printf("UDP Connection established\n");
+		printf("UDP Connection established \n");
            
            
 /*
@@ -228,11 +200,11 @@ void start(int my_mode, char* server_ip, unsigned char key [])
         // you may want to check the signature and decrypt the packet.
 			if (DEBUG) write(1,"<", 1);
 			buf_len = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&sout, &soutlen);
-			if ((sout.sin_addr.s_addr != from.sin_addr.s_addr) || (sout.sin_port != from.sin_port)){
+//			if ((sout.sin_addr.s_addr != from.sin_addr.s_addr) || (sout.sin_port != from.sin_port)){
 //				printf("Got packet from  %s:%i instead of %s:%i\n",
 //				       inet_ntoa(sout.sin_addr.s_addr), ntohs(sout.sin_port),
 //				       inet_ntoa(from.sin_addr.s_addr), ntohs(from.sin_port));
-			}
+//			}
 
 
 			// Process buffer after receiving

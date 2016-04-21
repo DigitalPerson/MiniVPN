@@ -5,7 +5,6 @@
  Simplified to be even more minimal
  12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
 
-#include <pthread.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <memory.h>
@@ -20,7 +19,7 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "tunproxy.c"
+//#include "crypto.c"
 
 #define CACERT "ca.crt"
 #define SERVER_COMMON_NAME "test.MiniVPNServer.com"
@@ -36,7 +35,7 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-int main() {
+int client() {
 	int err;
 	int sd;
 	struct sockaddr_in sa;
@@ -148,25 +147,6 @@ int main() {
 	close(sd);
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
-
-
-	sleep(2);
-	//start(2, "10.0.2.13");
-
-
-	pthread_t thread;
-	int rc;
-
-
-	rc = pthread_create(&thread, NULL, start_client, NULL);
-	if (rc){
-		printf("ERROR; return code from pthread_create() is %d\n", rc);
-		exit(-1);
-	}
-
-	/* Last thing that main() should do */
-	pthread_exit(NULL);
-
 
 
 	return 0;

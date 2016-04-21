@@ -89,9 +89,9 @@ int do_aes_128_cbc_crypt(unsigned char inbuf[], int inlen, unsigned char outbuf[
 	return 1;
 }
 
-calculate_sha256_hmac(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen, unsigned char key[]) {
-	HMAC(EVP_sha256(), key, 16, inbuf, inlen, outbuf, outlen);
-}
+//calculate_sha256_hmac(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen, unsigned char key[]) {
+//	HMAC(EVP_sha256(), key, 16, inbuf, inlen, outbuf, outlen);
+//}
 
 void calculate_md5_hash(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen) {
 	EVP_MD_CTX *mdctx;

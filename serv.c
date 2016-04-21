@@ -5,7 +5,6 @@
  Simplified to be even more minimal
  12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
 
-#include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -16,13 +15,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <openssl/rsa.h>       /* SSLeay stuff */
+#include <openssl/rsa.h>
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "tunproxy.c"
+//#include "crypto.c"
 
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"
@@ -45,7 +44,7 @@
 
 
 
-int main() {
+int server() {
 	int err;
 	int listen_sd;
 	int sd;
@@ -164,20 +163,6 @@ int main() {
 		exit(1);
 	}
 
-	//start(1, NULL);
-
-	pthread_t thread;
-	int rc;
-
-
-	rc = pthread_create(&thread, NULL, start_server, NULL);
-	if (rc){
-		printf("ERROR; return code from pthread_create() is %d\n", rc);
-		exit(-1);
-	}
-
-	/* Last thing that main() should do */
-	pthread_exit(NULL);
 
 	return 0;
 }
