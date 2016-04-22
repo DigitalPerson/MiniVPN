@@ -119,11 +119,31 @@ int main(int argc, char *argv[])
 	printf("Allocated interface %s. Configure and use it\n", ifr.ifr_name);
 	
 
-	if (MODE == 1){
-		server();
-	} else if (MODE == 2){
-		client();
+
+
+	pid_t pid = fork();
+
+	if (pid > 0){
+		printf("parent process \n");
+		if (MODE == 1){
+			server();
+		} else if (MODE == 2){
+			client();
+		}
+		exit(0);
 	}
+	else if (pid == 0){
+		printf("child process %i \n", getpid());
+		sleep(20);
+	}
+	else {
+		printf("fork() failed!\n");
+	}
+
+
+
+
+
 
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	sin.sin_family = AF_INET;
