@@ -35,7 +35,7 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-int client() {
+int client(int pipe_fd[]) {
 	int err;
 	int sd;
 	struct sockaddr_in sa;
@@ -43,6 +43,9 @@ int client() {
 	SSL* ssl;
 	char buf[BUFFER_SIZE];
 	SSL_METHOD *meth;
+
+
+	/* SSL preliminaries. */
 
 	SSLeay_add_ssl_algorithms();
 	meth = SSLv23_client_method();
@@ -88,7 +91,8 @@ int client() {
 	err = SSL_connect(ssl);
 	CHK_SSL(err);
 
-	if (verify_common_name(ssl, SERVER_COMMON_NAME) == 0) {
+	int common_name_verified = verify_common_name(ssl, SERVER_COMMON_NAME);
+	if (common_name_verified == 0) {
 		printf("Server common name can not be verified\n");
 		exit(1);
 	}
@@ -148,6 +152,13 @@ int client() {
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
 
+	if (common_name_verified == 1){
+		buf[0] = 1;
+		write(pipe_fd[1], buf, 1);
+	} else {
+		buf[0] = 0;
+		write(pipe_fd[1], buf, 1);
+	}
 
 	return 0;
 }

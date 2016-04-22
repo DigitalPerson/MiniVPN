@@ -44,7 +44,7 @@
 
 
 
-int server() {
+int server(int pipe_fd[]) {
 	int err;
 	int listen_sd;
 	int sd;
@@ -56,6 +56,8 @@ int server() {
 	char* str;
 	char buf[BUFFER_SIZE];
 	SSL_METHOD *meth;
+
+
 
 	/* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -159,8 +161,14 @@ int server() {
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
 
-	if (user_pass_verified == 0){
-		exit(1);
+
+
+	if (user_pass_verified == 1){
+		buf[0] = 1;
+		write(pipe_fd[1], buf, 1);
+	} else {
+		buf[0] = 0;
+		write(pipe_fd[1], buf, 1);
 	}
 
 

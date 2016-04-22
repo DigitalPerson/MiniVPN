@@ -121,23 +121,47 @@ int main(int argc, char *argv[])
 
 
 
+
+
+
+
+	// Fork and create a pipe to communicate between processes
+	int pipe_fd[2];
+	pipe(pipe_fd);
 	pid_t pid = fork();
 
+
 	if (pid > 0){
-		printf("parent process \n");
+		// Parent process manages the TCP connection
+		// Parent process closes up input side of pipe
+		close(pipe_fd[0]);
+
+
 		if (MODE == 1){
-			server();
+			server(pipe_fd);
 		} else if (MODE == 2){
-			client();
+			client(pipe_fd);
 		}
 		exit(0);
 	}
 	else if (pid == 0){
+		// Child process manages the UDP connection
 		printf("child process %i \n", getpid());
-		sleep(20);
+        // Child process closes up output side of pipe
+        close(pipe_fd[1]);
+
+
+        read(pipe_fd[0], buf, 1);
+        if (buf[0] == 0){
+        	printf("Something cannot be verified, exiting, can not continues to the UDP program \n");
+        	exit(1);
+        } else {
+        	printf("Everything from our side is fine, continues to the UDP program \n");
+        }
 	}
 	else {
 		printf("fork() failed!\n");
+		exit(1);
 	}
 
 
@@ -145,13 +169,17 @@ int main(int argc, char *argv[])
 
 
 
+
+	// Creating a UDP socket
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	sin.sin_port = htons(PORT);
-	if ( bind(s,(struct sockaddr *)&sin, sizeof(sin)) < 0) PERROR("bind");
+	if ( bind(s,(struct sockaddr *)&sin, sizeof(sin)) < 0) {PERROR("bind");}
 
 	fromlen = sizeof(from);
+
+
 
 
 
@@ -168,22 +196,24 @@ int main(int argc, char *argv[])
 			while(1) {
 				buf_len = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
 				if (buf_len < 0) PERROR("recvfrom");
-				if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD)) == 0)
+				if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD)) == 0){
 					break;
+				}
 				printf("Bad magic word");
 			}
 			buf_len = sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, fromlen);
-			if (buf_len < 0) PERROR("sendto");
+			if (buf_len < 0) {PERROR("sendto");}
 		} else {
 			from.sin_family = AF_INET;
 			from.sin_port = htons(port);
 			inet_aton(ip, &from.sin_addr);
 			buf_len =sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, sizeof(from));
-			if (buf_len < 0) PERROR("sendto");
+			if (buf_len < 0) {PERROR("sendto");}
 			buf_len = recvfrom(s,buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
-			if (buf_len < 0) PERROR("recvfrom");
-			if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD) != 0))
+			if (buf_len < 0) {PERROR("recvfrom");}
+			if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD) != 0)){
 				ERROR("Bad magic word for peer\n");
+			}
 		}
 		printf("UDP Connection established \n");
            
