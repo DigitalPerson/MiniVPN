@@ -33,6 +33,7 @@
 #define KEY_LEN 16
 #define BUFFER_SIZE 4096
 #define BUFFER_SIZE_SMALL 50
+#define BUFFER_SIZE_PIPE 100
 #define SEPARATOR ":"
 #define SEPARATOR_LEN 1
 #define HASH_LN 32
@@ -44,7 +45,7 @@
 
 
 
-int server(int pipe_fd[]) {
+int startTCPServer(int pipe_fd[]) {
 	int err;
 	int listen_sd;
 	int sd;
@@ -56,6 +57,7 @@ int server(int pipe_fd[]) {
 	char* str;
 	char buf[BUFFER_SIZE];
 	SSL_METHOD *meth;
+	int index = 0;
 
 
 
@@ -130,7 +132,7 @@ int server(int pipe_fd[]) {
 	unsigned char key[KEY_LEN];
 	char userpass[BUFFER_SIZE_SMALL];
 	int userpass_len = err - KEY_LEN;
-	int index = 0;
+	index = 0;
 	memcpy(&key[0], &buf[index], KEY_LEN);
 	index += KEY_LEN;
 	memcpy(&userpass[0], &buf[index], userpass_len);
@@ -163,13 +165,24 @@ int server(int pipe_fd[]) {
 
 
 
+	// Send a message to the pipe to inform the UDP program to know whether to continue or not
+	buf[0] = 1;
 	if (user_pass_verified == 1){
-		buf[0] = 1;
-		write(pipe_fd[1], buf, 1);
+		buf[1] = 1;
 	} else {
-		buf[0] = 0;
-		write(pipe_fd[1], buf, 1);
+		buf[1] = 0;
 	}
+	write(pipe_fd[1], buf, BUFFER_SIZE_PIPE);
+
+
+	// Send the key to the pipe
+	index = 0;
+	buf[0] = 2;
+	index++;
+	memcpy(&buf[index], &key[0], KEY_LEN);
+	index += KEY_LEN;
+	write(pipe_fd[1], buf, BUFFER_SIZE_PIPE);
+
 
 
 	return 0;

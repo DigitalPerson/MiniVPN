@@ -14,6 +14,19 @@
  */
 
 
+/* Pipe messages guide
+	byte 0: command type
+
+		----------------
+		byte 0 = 1 means it is a authentication status message
+			byte 1 = 0 means authentication is  not successful
+			byte 1 = 1 means authentication is successful
+		----------------
+		byte 0 = 2 means it is a update key message
+
+
+
+*/
 
 #include <stdio.h>
 #include <unistd.h>
@@ -35,11 +48,12 @@
 #define PERROR(x) do { perror(x); exit(1); } while (0)
 #define ERROR(x, args ...) do { fprintf(stderr,"ERROR:" x, ## args); exit(1); } while (0)
 #define BUFFER_SIZE 2000
+#define BUFFER_SIZE_PIPE 100
 #define HMAC_LEN 32
 #define IV_LEN 16
 
 char MAGIC_WORD[] = "Wazaaaaaaaaaaahhhh !";
-unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+unsigned char key[KEY_LEN];
 unsigned char original_buf[BUFFER_SIZE];
 int original_buf_len;
 unsigned char modified_buf[BUFFER_SIZE];
@@ -72,6 +86,7 @@ int main(int argc, char *argv[])
 	int MODE = 0;
 	int TUNMODE = IFF_TUN;
 	int DEBUG = 0;
+	int index = 0;
 
 	while ((c = getopt(argc, argv, "s:c:ehd")) != -1) {
 		switch (c) {
@@ -138,26 +153,41 @@ int main(int argc, char *argv[])
 
 
 		if (MODE == 1){
-			server(pipe_fd);
+			startTCPServer(pipe_fd);
 		} else if (MODE == 2){
-			client(pipe_fd);
+			startTCPClient(pipe_fd);
 		}
 		exit(0);
 	}
 	else if (pid == 0){
 		// Child process manages the UDP connection
-		printf("child process %i \n", getpid());
         // Child process closes up output side of pipe
         close(pipe_fd[1]);
 
 
-        read(pipe_fd[0], buf, 1);
-        if (buf[0] == 0){
-        	printf("Something cannot be verified, exiting, can not continues to the UDP program \n");
-        	exit(1);
+        // Check the TCP program to see whether to continue or not (ie: authentication is successful ...)
+        // Note that read function will block until we get a decision from the TCP program
+        memset(buf, 0, BUFFER_SIZE);
+        read(pipe_fd[0], buf, BUFFER_SIZE_PIPE);
+        if (buf[0] == 1 && buf[1] == 1){
+        	printf("I accepted the other side verification, continues to the UDP program \n");
         } else {
-        	printf("Everything from our side is fine, continues to the UDP program \n");
+        	printf("Something cannot be verified, exiting, cannot continues to the UDP program \n");
+        	exit(1);
         }
+
+        // Get the key from the TCP program
+        memset(buf, 0, BUFFER_SIZE);
+        read(pipe_fd[0], buf, BUFFER_SIZE_PIPE);
+        index = 0;
+        // If it is an update key message
+        if (buf[0] == 2){
+        	index++;
+        	memcpy(&key[0], &buf[index], KEY_LEN);
+        	index += KEY_LEN;
+        }
+
+
 	}
 	else {
 		printf("fork() failed!\n");
