@@ -1,19 +1,3 @@
-/*
- * tunproxy.c --- small demo program for tunneling over UDP with tun/tap
- *
- * Copyright (C) 2003  Philippe Biondi <phil@secdev.org>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- */
-
-
 /* Messages structure guide
 	byte 0: command type
 		----------------
@@ -39,8 +23,7 @@
 #include <linux/if_tun.h>
 #include <getopt.h>
 #include <sys/ioctl.h>
-#include "crypto.c"
-#include "hmac.c"
+#include "helper.c"
 #include "serv.c"
 #include "cli.c"
 
@@ -53,7 +36,6 @@
 #define SEQ_NUM_LN 4
 #define SEQ_NUM_HISTORY_LN 10000
 
-char MAGIC_WORD[] = "Wazaaaaaaaaaaahhhh !";
 unsigned char key[KEY_LEN];
 unsigned long seq_num_send = 0;
 unsigned long seq_num_recv = 0;
@@ -230,37 +212,23 @@ int main(int argc, char *argv[])
 
 
 
-/*
- * The next code module will be the authentication for the client/server
- * based on the MODE value.(MODE==1 means server; or it is client)
- * In this example, we just exchange the magic word for authentication.
- * However, in your case, you need to use PKI and password/username to handle
- * the case.
- */
 
-
+// Send a test packet to let the server know the clients ip address and initialize the UDP connection
+// mode = 1 means it is a server and mode = 2 mens it is aclinet	
+	char test_packet[] = "test";
 	if (MODE == 1) {
-			while(1) {
-				buf_len = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
-				if (buf_len < 0) PERROR("recvfrom");
-				if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD)) == 0){
-					break;
-				}
-				printf("Bad magic word");
-			}
-			buf_len = sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, fromlen);
+			buf_len = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
+			if (buf_len < 0) PERROR("recvfrom");
+			buf_len = sendto(s, test_packet, sizeof(test_packet), 0, (struct sockaddr *)&from, fromlen);
 			if (buf_len < 0) {PERROR("sendto");}
 		} else {
 			from.sin_family = AF_INET;
 			from.sin_port = htons(port);
 			inet_aton(server_ip, &from.sin_addr);
-			buf_len =sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, sizeof(from));
+			buf_len =sendto(s, test_packet, sizeof(test_packet), 0, (struct sockaddr *)&from, sizeof(from));
 			if (buf_len < 0) {PERROR("sendto");}
 			buf_len = recvfrom(s,buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
 			if (buf_len < 0) {PERROR("recvfrom");}
-			if (strncmp(MAGIC_WORD, buf, sizeof(MAGIC_WORD) != 0)){
-				ERROR("Bad magic word for peer\n");
-			}
 		}
 		printf("UDP Connection established \n");
            
@@ -302,11 +270,6 @@ int main(int argc, char *argv[])
         // you may want to check the signature and decrypt the packet.
 			if (DEBUG) write(1,"<", 1);
 			buf_len = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&sout, &soutlen);
-//			if ((sout.sin_addr.s_addr != from.sin_addr.s_addr) || (sout.sin_port != from.sin_port)){
-//				printf("Got packet from  %s:%i instead of %s:%i\n",
-//				       inet_ntoa(sout.sin_addr.s_addr), ntohs(sout.sin_port),
-//				       inet_ntoa(from.sin_addr.s_addr), ntohs(from.sin_port));
-//			}
 
 
 			// Process buffer after receiving
@@ -314,7 +277,7 @@ int main(int argc, char *argv[])
 
 			if (verifieing_result == 1){  // do not write the message if it cannot be verified
 				if (write(fd, original_buf, original_buf_len) < 0) PERROR("write");
-				printf("verify the the packet \n");
+				printf("packet verified \n");
 			} else {
 				printf("Cannot verify the the packet \n");
 			}
@@ -428,6 +391,10 @@ void get_ip_from_hostname(const char* hostname , char ip[])
     he = gethostbyname(hostname);
     addr_list = (struct in_addr **) he->h_addr_list;
     strcpy(ip, inet_ntoa(*addr_list[0]));
+}
+
+void calculate_sha256_hmac(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen, unsigned char key[]) {
+	HMAC(EVP_sha256(), key, 16, inbuf, inlen, outbuf, outlen);
 }
 
 

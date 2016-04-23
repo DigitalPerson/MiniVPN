@@ -6,60 +6,6 @@
 
 #define BUFFER_SIZE 4096
 
-//int main(void) {
-//
-////	// ------------------------ Test Encryption ------------------------
-////	unsigned char iv[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-////			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-////	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-////			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-////
-////	unsigned char inbuf[] = { 0x54, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20,
-////			0x61, 0x20, 0x74, 0x6F, 0x70, 0x20, 0x73, 0x65,
-////			0x63, 0x72, 0x65, 0x74, 0x2E };
-////	int inlen = sizeof(inbuf);
-////	unsigned char outbuf[1024 + EVP_MAX_BLOCK_LENGTH];
-////	int outlen = 0;
-////
-////
-////	unsigned char outbuf2[1024 + EVP_MAX_BLOCK_LENGTH];
-////	int outlen2 = 0;
-////
-////
-////
-////	// encrypt
-////	do_aes_128_cbc_crypt(inbuf, inlen, outbuf, &outlen, key, iv, 1);
-////	// decrypt
-////	do_aes_128_cbc_crypt(outbuf, outlen, outbuf2, &outlen2, key, iv, 0);
-////
-////
-////	print_buffer(outbuf2, outlen2);
-////	printf("the sum is %i \n", outlen2);
-//
-//
-////	// ------------------------ Test Hash ------------------------
-////	char inbuf[] = {0x6D, 0x79, 0x20, 0x6E, 0x61, 0x6D, 0x65, 0x20, 0x69, 0x73, 0x20, 0x42, 0x69, 0x6C, 0x61, 0x6C};
-////	int inlen = sizeof(inbuf);
-////	char outbuf[16];
-////	int* outlen;
-////	calculate_md5_hash(inbuf, inlen, outbuf, &outlen);
-////	print_buffer(outbuf, outlen);
-//
-//
-//
-////	// ------------------------ Test HMAC ------------------------
-////	unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-////				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-////	unsigned char inbuf[] = {0x6D, 0x79, 0x20, 0x6E, 0x61, 0x6D, 0x65, 0x20, 0x69, 0x73, 0x20, 0x42, 0x69, 0x6C, 0x61, 0x6C};
-////	int inlen = sizeof(inbuf);
-////	unsigned char outbuf[1024];
-////	int outlen = 0;
-////	calculate_sha256_hmac(inbuf, inlen, outbuf, &outlen, key);
-////	print_buffer(outbuf, outlen);
-//
-//
-//	return 0;
-//}
 
 int do_aes_128_cbc_crypt(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen,
 		unsigned char key[], unsigned char iv[], int do_encrypt) {
@@ -228,3 +174,4 @@ unsigned long convert_bytes_to_long(unsigned char bytes[]){
     unsigned long n = *(int *)bytes;
     return n;
 }
+

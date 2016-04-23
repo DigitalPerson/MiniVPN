@@ -1,10 +1,3 @@
-/* serv.cpp  -  Minimal ssleay server for Unix
- 30.9.1996, Sampo Kellomaki <sampo@iki.fi> */
-
-/* mangled to work with SSLeay-0.9.0b and OpenSSL 0.9.2b
- Simplified to be even more minimal
- 12/98 - 4/99 Wade Scholine <wades@mail.cybg.com> */
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -25,11 +18,12 @@
 #include <signal.h>
 
 /* define HOME to be dir for key and cert files... */
-#define HOME "./"
+#define HOME "./files/"
 /* Make these what you want for cert & key files */
-#define CERTF  HOME "server.crt"
-#define KEYF  HOME  "server.key"
-#define SHADOW_FILE_PATH  HOME  "shadow"
+#define CERTF HOME "server.crt"
+#define KEYF HOME "server.key"
+#define SHADOW_FILE_PATH HOME "shadow"
+
 #define SERVER_PORT 1111
 #define KEY_LEN 16
 #define BUFFER_SIZE 4096
