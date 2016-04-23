@@ -192,7 +192,22 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 		memset(buf, 0, BUFFER_SIZE);
 		err = SSL_read (ssl, buf, BUFFER_SIZE_MESSAGE);
 	  CHK_SSL(err);
-	  if (buf[0] == 2){
+		index = 0;
+	  if (buf[0] == 1){
+		  printf ("Got key update message \n");
+		  index++;
+			memcpy(&key[0], &buf[index], KEY_LEN);
+			index += KEY_LEN;
+
+			// Send the new key to the pipe (to the UDP program)
+			index = 0;
+			buf[0] = 1;
+			index++;
+			memcpy(&buf[index], &key[0], KEY_LEN);
+			index += KEY_LEN;
+			write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+	  }
+	  else if (buf[0] == 2){
 		  printf ("Got shutdown message \n");
 		  kill(child_pid, SIGKILL);
 		  break;

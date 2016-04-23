@@ -176,11 +176,37 @@ int startTCPClient(int pipe_fd[], int child_pid) {
 	sleep(1);
 	char* command[BUFFER_SIZE_SMALL];
 	while(1) {
-		printf("Enter command:");
+		printf("Enter command: ");
 		gets(command);
 
+		if (strcmp(command, "1") == 0){
+			printf("Updating key \n");
 
-		if (strcmp(command, "2") == 0)
+			// Generate new random key
+			memset(buf, 0, BUFFER_SIZE);
+			generate_random_number(key, KEY_LEN);
+
+
+			// Send the new key to the server through the TCP tunnel
+			index = 0;
+			buf[0] = 1;
+			index++;
+			memcpy(&buf[index], &key[0], KEY_LEN);
+			index += KEY_LEN;
+			err = SSL_write(ssl, buf, BUFFER_SIZE_MESSAGE);
+						CHK_SSL(err);
+
+
+			// Send the new key to the pipe (to the UDP program)
+			index = 0;
+			buf[0] = 1;
+			index++;
+			memcpy(&buf[index], &key[0], KEY_LEN);
+			index += KEY_LEN;
+			write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+
+		}
+		else if (strcmp(command, "2") == 0)
 		{
 			printf("Sending shutdown \n");
 			buf[0] = 2;

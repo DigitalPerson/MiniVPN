@@ -50,7 +50,7 @@
 #define PERROR(x) do { perror(x); exit(1); } while (0)
 #define ERROR(x, args ...) do { fprintf(stderr,"ERROR:" x, ## args); exit(1); } while (0)
 #define BUFFER_SIZE 2000
-#define BUFFER_SIZE_PIPE 100
+#define BUFFER_SIZE_MESSAGE 100
 #define HMAC_LEN 32
 #define IV_LEN 16
 
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
         // Check the TCP program to see whether to continue or not (ie: authentication is successful ...)
         // Note that read function will block until we get a decision from the TCP program
         memset(buf, 0, BUFFER_SIZE);
-        read(pipe_fd[0], buf, BUFFER_SIZE_PIPE);
+        read(pipe_fd[0], buf, BUFFER_SIZE_MESSAGE);
         if (buf[0] == 0 && buf[1] == 1){
         	printf("I accepted the other side verification, continues to the UDP program \n");
         } else {
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
 
         // Get the key from the TCP program
         memset(buf, 0, BUFFER_SIZE);
-        read(pipe_fd[0], buf, BUFFER_SIZE_PIPE);
+        read(pipe_fd[0], buf, BUFFER_SIZE_MESSAGE);
         index = 0;
         // If it is an update key message
         if (buf[0] == 1){
@@ -265,7 +265,10 @@ int main(int argc, char *argv[])
 		FD_ZERO(&fdset);
 		FD_SET(fd, &fdset);
 		FD_SET(s, &fdset);
-		if (select(fd+s+1, &fdset,NULL,NULL,NULL) < 0) PERROR("select");
+		FD_SET(pipe_fd[0], &fdset);
+		if (select(fd+s+pipe_fd[0]+1, &fdset,NULL,NULL,NULL) < 0) {
+			PERROR("select");
+		}
 		if (FD_ISSET(fd, &fdset)) {
 			if (DEBUG) write(1,">", 1);
 			buf_len = read(fd, buf, sizeof(buf));
@@ -279,7 +282,7 @@ int main(int argc, char *argv[])
 			if (sendto(s, modified_buf, modified_buf_len, 0, (struct sockaddr *)&from, fromlen) < 0) PERROR("sendto");
 
 
-		} else {
+		} else if (FD_ISSET(s, &fdset)) {
         // this is to fetch the packet data from another VPN app and put it into the TUN/TAP 
         // you may want to check the signature and decrypt the packet.
 			if (DEBUG) write(1,"<", 1);
@@ -302,6 +305,18 @@ int main(int argc, char *argv[])
 
 
 
+
+		}  else if (FD_ISSET(pipe_fd[0], &fdset)) {
+			// Get the key from the TCP program
+			memset(buf, 0, BUFFER_SIZE_MESSAGE);
+			read(pipe_fd[0], buf, BUFFER_SIZE_MESSAGE);
+			index = 0;
+			// If it is an update key message
+			if (buf[0] == 1){
+				index++;
+				memcpy(&key[0], &buf[index], KEY_LEN);
+				index += KEY_LEN;
+			}
 
 		}
 	}
