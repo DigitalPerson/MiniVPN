@@ -14,15 +14,17 @@
  */
 
 
-/* Pipe messages guide
+/* Messages structure guide
 	byte 0: command type
 
 		----------------
-		byte 0 = 1 means it is a authentication status message
+		byte 0 = 0 means it is a authentication status message
 			byte 1 = 0 means authentication is  not successful
 			byte 1 = 1 means authentication is successful
 		----------------
-		byte 0 = 2 means it is a update key message
+		byte 0 = 1 means it is a update key message
+		----------------
+		byte 0 = 2 means it is a shutdown message
 
 
 
@@ -152,10 +154,11 @@ int main(int argc, char *argv[])
 		close(pipe_fd[0]);
 
 
+		int child_pid = pid;
 		if (MODE == 1){
-			startTCPServer(pipe_fd);
+			startTCPServer(pipe_fd, child_pid);
 		} else if (MODE == 2){
-			startTCPClient(pipe_fd);
+			startTCPClient(pipe_fd, child_pid);
 		}
 		exit(0);
 	}
@@ -169,7 +172,7 @@ int main(int argc, char *argv[])
         // Note that read function will block until we get a decision from the TCP program
         memset(buf, 0, BUFFER_SIZE);
         read(pipe_fd[0], buf, BUFFER_SIZE_PIPE);
-        if (buf[0] == 1 && buf[1] == 1){
+        if (buf[0] == 0 && buf[1] == 1){
         	printf("I accepted the other side verification, continues to the UDP program \n");
         } else {
         	printf("Something cannot be verified, exiting, cannot continues to the UDP program \n");
@@ -181,11 +184,12 @@ int main(int argc, char *argv[])
         read(pipe_fd[0], buf, BUFFER_SIZE_PIPE);
         index = 0;
         // If it is an update key message
-        if (buf[0] == 2){
+        if (buf[0] == 1){
         	index++;
         	memcpy(&key[0], &buf[index], KEY_LEN);
         	index += KEY_LEN;
         }
+
 
 
 	}

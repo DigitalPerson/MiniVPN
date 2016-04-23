@@ -19,6 +19,8 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <sys/types.h>
+#include <signal.h>
 //#include "crypto.c"
 
 #define CACERT "ca.crt"
@@ -28,7 +30,7 @@
 #define KEY_LEN 16
 #define BUFFER_SIZE 4096
 #define BUFFER_SIZE_SMALL 50
-#define BUFFER_SIZE_PIPE 100
+#define BUFFER_SIZE_MESSAGE 100
 #define SEPARATOR ":"
 #define SEPARATOR_LEN 1
 
@@ -36,7 +38,7 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-int startTCPClient(int pipe_fd[]) {
+int startTCPClient(int pipe_fd[], int child_pid) {
 	int err;
 	int sd;
 	struct sockaddr_in sa;
@@ -146,6 +148,56 @@ int startTCPClient(int pipe_fd[]) {
 	printf("%s\n", buf);
 	memset(buf, 0, BUFFER_SIZE);
 
+
+
+
+
+	// Send a message to the pipe to inform the UDP program to know whether to continue or not
+	buf[0] = 0;
+	if (common_name_verified == 1){
+		buf[1] = 1;
+	} else {
+		buf[1] = 0;
+	}
+	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+
+
+	// Send the key to the pipe
+	index = 0;
+	buf[0] = 1;
+	index++;
+	memcpy(&buf[index], &key[0], KEY_LEN);
+	index += KEY_LEN;
+	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+
+
+
+
+	sleep(1);
+	char* command[BUFFER_SIZE_SMALL];
+	while(1) {
+		printf("Enter command:");
+		gets(command);
+
+
+		if (strcmp(command, "2") == 0)
+		{
+			printf("Sending shutdown \n");
+			buf[0] = 2;
+			err = SSL_write(ssl, buf, BUFFER_SIZE_MESSAGE);
+			CHK_SSL(err);
+			kill(child_pid, SIGKILL);
+			break;
+		}
+		else {
+			printf("Enter 1 to update key or 2 to shutdown \n");
+		}
+
+
+
+	}
+
+
 	SSL_shutdown(ssl); /* send SSL/TLS close_notify */
 
 	/* Clean up. */
@@ -154,24 +206,6 @@ int startTCPClient(int pipe_fd[]) {
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
 
-
-	// Send a message to the pipe to inform the UDP program to know whether to continue or not
-	buf[0] = 1;
-	if (common_name_verified == 1){
-		buf[1] = 1;
-	} else {
-		buf[1] = 0;
-	}
-	write(pipe_fd[1], buf, BUFFER_SIZE_PIPE);
-
-
-	// Send the key to the pipe
-	index = 0;
-	buf[0] = 2;
-	index++;
-	memcpy(&buf[index], &key[0], KEY_LEN);
-	index += KEY_LEN;
-	write(pipe_fd[1], buf, BUFFER_SIZE_PIPE);
 
 
 	return 0;

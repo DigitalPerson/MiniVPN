@@ -21,6 +21,8 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <sys/types.h>
+#include <signal.h>
 //#include "crypto.c"
 
 /* define HOME to be dir for key and cert files... */
@@ -33,7 +35,7 @@
 #define KEY_LEN 16
 #define BUFFER_SIZE 4096
 #define BUFFER_SIZE_SMALL 50
-#define BUFFER_SIZE_PIPE 100
+#define BUFFER_SIZE_MESSAGE 100
 #define SEPARATOR ":"
 #define SEPARATOR_LEN 1
 #define HASH_LN 32
@@ -45,7 +47,7 @@
 
 
 
-int startTCPServer(int pipe_fd[]) {
+int startTCPServer(int pipe_fd[], int child_pid) {
 	int err;
 	int listen_sd;
 	int sd;
@@ -157,31 +159,57 @@ int startTCPServer(int pipe_fd[]) {
 	err = SSL_write(ssl, message, message_len);
 	CHK_SSL(err);
 
-	/* Clean up. */
 
-	close(sd);
-	SSL_free(ssl);
-	SSL_CTX_free(ctx);
 
 
 
 	// Send a message to the pipe to inform the UDP program to know whether to continue or not
-	buf[0] = 1;
+	buf[0] = 0;
 	if (user_pass_verified == 1){
 		buf[1] = 1;
 	} else {
 		buf[1] = 0;
 	}
-	write(pipe_fd[1], buf, BUFFER_SIZE_PIPE);
+	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
 
 
 	// Send the key to the pipe
 	index = 0;
-	buf[0] = 2;
+	buf[0] = 1;
 	index++;
 	memcpy(&buf[index], &key[0], KEY_LEN);
 	index += KEY_LEN;
-	write(pipe_fd[1], buf, BUFFER_SIZE_PIPE);
+	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+
+
+
+	sleep(1);
+	while(1) {
+
+
+
+		printf("waiting for input from the client \n");
+		memset(buf, 0, BUFFER_SIZE);
+		err = SSL_read (ssl, buf, BUFFER_SIZE_MESSAGE);
+	  CHK_SSL(err);
+	  if (buf[0] == 2){
+		  printf ("Got shutdown message \n");
+		  kill(child_pid, SIGKILL);
+		  break;
+	  } else {
+		  printf ("Got unrecognized message \n");
+		  kill(child_pid, SIGKILL);
+		  break;
+	  }
+	}
+
+
+
+	/* Clean up. */
+
+	close(sd);
+	SSL_free(ssl);
+	SSL_CTX_free(ctx);
 
 
 
