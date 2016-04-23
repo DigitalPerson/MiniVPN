@@ -216,3 +216,15 @@ int strcmp_ignore_case(char const *a, char const *b)
     }
     return -1;
 }
+
+void convert_long_to_bytes(unsigned long n, unsigned char bytes[]){
+    bytes[3] = (n >> 24) & 0xFF;
+    bytes[2] = (n >> 16) & 0xFF;
+    bytes[1] = (n >> 8) & 0xFF;
+    bytes[0] = n & 0xFF;
+}
+
+unsigned long convert_bytes_to_long(unsigned char bytes[]){
+    unsigned long n = *(int *)bytes;
+    return n;
+}

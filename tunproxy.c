@@ -16,7 +16,6 @@
 
 /* Messages structure guide
 	byte 0: command type
-
 		----------------
 		byte 0 = 0 means it is a authentication status message
 			byte 1 = 0 means authentication is  not successful
@@ -25,8 +24,6 @@
 		byte 0 = 1 means it is a update key message
 		----------------
 		byte 0 = 2 means it is a shutdown message
-
-
 
 */
 
@@ -53,9 +50,15 @@
 #define BUFFER_SIZE_MESSAGE 100
 #define HMAC_LEN 32
 #define IV_LEN 16
+#define SEQ_NUM_LN 4
+#define SEQ_NUM_HISTORY_LN 10000
 
 char MAGIC_WORD[] = "Wazaaaaaaaaaaahhhh !";
 unsigned char key[KEY_LEN];
+unsigned long seq_num_send = 0;
+unsigned long seq_num_recv = 0;
+unsigned char seq_num_buf[SEQ_NUM_LN];
+unsigned char seq_num_history[SEQ_NUM_HISTORY_LN];
 unsigned char original_buf[BUFFER_SIZE];
 int original_buf_len;
 unsigned char modified_buf[BUFFER_SIZE];
@@ -78,7 +81,6 @@ void usage()
 
 int main(int argc, char *argv[])
 {
-
 	struct sockaddr_in sin, sout, from;
 	struct ifreq ifr;
 	int fd, s, fromlen, soutlen, port, PORT, buf_len;
@@ -270,6 +272,8 @@ int main(int argc, char *argv[])
  * as the hash signautre checking to make sure the VPN's
  * confidentiality and integraty
  * */
+
+	memset(seq_num_history, 0, SEQ_NUM_HISTORY_LN);
 	while (1) {
         // this is to fetch the packet data from TUN/TAP and forward to the remote app
         // you may want to encrypt and sign each packet
@@ -306,12 +310,13 @@ int main(int argc, char *argv[])
 
 
 			// Process buffer after receiving
-			int hmac_verifieing_result = process_buffer_after_receiving(buf, buf_len, key, original_buf, &original_buf_len);
+			int verifieing_result = process_buffer_after_receiving(buf, buf_len, key, original_buf, &original_buf_len);
 
-			if (hmac_verifieing_result == 1){  // do not write the message if HMAC cannot be verified
+			if (verifieing_result == 1){  // do not write the message if it cannot be verified
 				if (write(fd, original_buf, original_buf_len) < 0) PERROR("write");
+				printf("verify the the packet \n");
 			} else {
-				printf("Cannot verify the HMAC \n \n");
+				printf("Cannot verify the the packet \n");
 			}
 
 
@@ -349,6 +354,11 @@ void process_buffer_before_sending(unsigned char* buf, int buf_len, unsigned cha
 	index = 0;
 	memcpy(&modified_buf_without_hmac[index], &iv[0], IV_LEN);
 	index += IV_LEN;
+	seq_num_send++;
+	printf("seq_send = %i \n", seq_num_send);
+	convert_long_to_bytes(seq_num_send, seq_num_buf);
+	memcpy(&modified_buf_without_hmac[index], &seq_num_buf[0], SEQ_NUM_LN);
+	index += SEQ_NUM_LN;
 	memcpy(&modified_buf_without_hmac[index], &encrypted_buf[0], encrypted_buf_len);
 	index += encrypted_buf_len;
 	modified_buf_without_hmac_len = index;
@@ -375,8 +385,21 @@ int process_buffer_after_receiving(unsigned char* buf, int buf_len, unsigned cha
 	memcpy(&iv[0], &buf[index], IV_LEN);
 	index += IV_LEN;
 
+
+	// Get the Sequence number
+	memcpy(&seq_num_buf[0], &buf[index], SEQ_NUM_LN);
+	index += SEQ_NUM_LN;
+	seq_num_recv = convert_bytes_to_long(seq_num_buf);
+	printf("recv = %i \n", seq_num_recv);
+	if (seq_num_history[seq_num_recv] == 1){
+		return 0;
+	}
+	seq_num_history[seq_num_recv] = 1;
+
+
+
 	// Get the encrypted buffer
-	encrypted_buf_len = buf_len -IV_LEN -HMAC_LEN ;
+	encrypted_buf_len = buf_len -IV_LEN - SEQ_NUM_LN -HMAC_LEN ;
 	memcpy(&encrypted_buf[0], &buf[index], encrypted_buf_len);
 	index += encrypted_buf_len;
 
@@ -406,4 +429,11 @@ void get_ip_from_hostname(const char* hostname , char ip[])
     addr_list = (struct in_addr **) he->h_addr_list;
     strcpy(ip, inet_ntoa(*addr_list[0]));
 }
+
+
+
+
+
+
+
 
