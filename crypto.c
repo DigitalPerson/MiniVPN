@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/evp.h>
+#include <arpa/inet.h>
 
 #define BUFFER_SIZE 4096
 
@@ -197,4 +198,21 @@ void convert_hex_string_to_bytes_array (char* str, unsigned char buf[]){
 		buf[count] = strtol(element_buf, NULL, 0);
 		pos += 2 * sizeof(char);
 	}
+}
+
+int is_valid_ip(char *ipAddress)
+{
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, ipAddress, &(sa.sin_addr));
+    return result != 0;
+}
+
+int strcmp_ignore_case(char const *a, char const *b)
+{
+    for (;; a++, b++) {
+        int d = tolower(*a) - tolower(*b);
+        if (d != 0 || !*a)
+            return d;
+    }
+    return -1;
 }

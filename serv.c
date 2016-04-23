@@ -23,7 +23,6 @@
 #include <openssl/err.h>
 #include <sys/types.h>
 #include <signal.h>
-//#include "crypto.c"
 
 /* define HOME to be dir for key and cert files... */
 #define HOME "./"

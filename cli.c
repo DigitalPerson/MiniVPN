@@ -21,11 +21,8 @@
 #include <openssl/err.h>
 #include <sys/types.h>
 #include <signal.h>
-//#include "crypto.c"
 
 #define CACERT "ca.crt"
-#define SERVER_COMMON_NAME "test.MiniVPNServer.com"
-#define SERVER_IP "10.0.2.13"
 #define SERVER_PORT 1111
 #define KEY_LEN 16
 #define BUFFER_SIZE 4096
@@ -38,7 +35,7 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-int startTCPClient(int pipe_fd[], int child_pid) {
+int startTCPClient(int pipe_fd[], int child_pid, char* server_ip, char* server_hostname) {
 	int err;
 	int sd;
 	struct sockaddr_in sa;
@@ -71,7 +68,7 @@ int startTCPClient(int pipe_fd[], int child_pid) {
 
 	memset(&sa, '\0', sizeof(sa));
 	sa.sin_family = AF_INET;
-	sa.sin_addr.s_addr = inet_addr(SERVER_IP);
+	sa.sin_addr.s_addr = inet_addr(server_ip);
 	sa.sin_port = htons(SERVER_PORT);
 
 	err = connect(sd, (struct sockaddr*) &sa, sizeof(sa));
@@ -95,7 +92,7 @@ int startTCPClient(int pipe_fd[], int child_pid) {
 	err = SSL_connect(ssl);
 	CHK_SSL(err);
 
-	int common_name_verified = verify_common_name(ssl, SERVER_COMMON_NAME);
+	int common_name_verified = verify_common_name(ssl, server_hostname);
 	if (common_name_verified == 0) {
 		printf("Server common name can not be verified\n");
 		exit(1);
@@ -237,7 +234,7 @@ int startTCPClient(int pipe_fd[], int child_pid) {
 	return 0;
 }
 
-int verify_common_name(SSL* ssl, char* fetched_server_common_name) {
+int verify_common_name(SSL* ssl, char* server_name) {
 	int result = 1;
 	// Get server's certificate (note: beware of dynamic allocation)
 	X509* server_cert = SSL_get_peer_certificate(ssl);
@@ -251,13 +248,13 @@ int verify_common_name(SSL* ssl, char* fetched_server_common_name) {
 	char* cert_server_common_name = ASN1_STRING_data(subject_name_asn1);
 	CHK_NULL(cert_server_common_name);
 
-	// get the last part of fetched server common name
-	int fetched_server_common_name_ln = strlen(fetched_server_common_name);
+	// get the last part of server name
+	int server_name_ln = strlen(server_name);
 	int cert_server_common_name_ln = strlen(cert_server_common_name);
-	const char *last_part_of_fetched_server_common_name = &fetched_server_common_name[fetched_server_common_name_ln - cert_server_common_name_ln];
+	const char *last_part_of_server_name = &server_name[server_name_ln - cert_server_common_name_ln];
 
-	// compare the last part of fetched server common name with the name that we got from the certificate
-	if (strcmp(last_part_of_fetched_server_common_name, cert_server_common_name) != 0) {
+	// compare the last part of server name with the name that we got from the certificate
+	if (strcmp_ignore_case(last_part_of_server_name, cert_server_common_name) != 0) {
 		result = 0;
 	}
 	OPENSSL_free(cert_server_common_name);

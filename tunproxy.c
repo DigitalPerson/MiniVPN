@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 	struct sockaddr_in sin, sout, from;
 	struct ifreq ifr;
 	int fd, s, fromlen, soutlen, port, PORT, buf_len;
-	char c, *p, *ip;
+	char c, *p, *server_ip, *server_hostname;
 	char buf[BUFFER_SIZE];
 	fd_set fdset;
 	int MODE = 0;
@@ -103,10 +103,21 @@ int main(int argc, char *argv[])
 			break;
 		case 'c':
 			MODE = 2;
-			p = memchr(optarg,':',16);
+			p = memchr(optarg,':',100);
 			if (!p) ERROR("invalid argument : [%s]\n",optarg);
 			*p = 0;
-			ip = optarg;
+
+			// Get server ip from hostname
+			server_hostname = optarg;
+			if (is_valid_ip(server_hostname) == 1){
+				server_ip = server_hostname;
+			} else {
+				char ip [BUFFER_SIZE_SMALL];
+				get_ip_from_hostname(server_hostname, ip);
+				server_ip = ip;
+			}
+			printf("server ip = %s\n", server_ip);
+
 			port = atoi(p+1);
 			PORT = 0;
 			break;
@@ -158,7 +169,7 @@ int main(int argc, char *argv[])
 		if (MODE == 1){
 			startTCPServer(pipe_fd, child_pid);
 		} else if (MODE == 2){
-			startTCPClient(pipe_fd, child_pid);
+			startTCPClient(pipe_fd, child_pid, server_ip, server_hostname);
 		}
 		exit(0);
 	}
@@ -240,7 +251,7 @@ int main(int argc, char *argv[])
 		} else {
 			from.sin_family = AF_INET;
 			from.sin_port = htons(port);
-			inet_aton(ip, &from.sin_addr);
+			inet_aton(server_ip, &from.sin_addr);
 			buf_len =sendto(s, MAGIC_WORD, sizeof(MAGIC_WORD), 0, (struct sockaddr *)&from, sizeof(from));
 			if (buf_len < 0) {PERROR("sendto");}
 			buf_len = recvfrom(s,buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
@@ -386,3 +397,13 @@ int process_buffer_after_receiving(unsigned char* buf, int buf_len, unsigned cha
 
 	return hmac_verifieing_result;
 }
+
+void get_ip_from_hostname(const char* hostname , char ip[])
+{
+    struct hostent *he;
+    struct in_addr **addr_list;
+    he = gethostbyname(hostname);
+    addr_list = (struct in_addr **) he->h_addr_list;
+    strcpy(ip, inet_ntoa(*addr_list[0]));
+}
+
