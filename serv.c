@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <signal.h>
 
-/* define HOME to be dir for key and cert files... */
+/* Define HOME to be dir for key and cert files... */
 #define HOME "./files/"
 /* Make these what you want for cert & key files */
 #define CERTF HOME "server.crt"
@@ -38,8 +38,6 @@
 #define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
 #define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
-
-
 int startTCPServer(int pipe_fd[], int child_pid) {
 	int err;
 	int listen_sd;
@@ -53,8 +51,6 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	char buf[BUFFER_SIZE];
 	SSL_METHOD *meth;
 	int index = 0;
-
-
 
 	/* SSL preliminaries. We keep the certificate and key with the context. */
 
@@ -77,10 +73,10 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	}
 
 	if (!SSL_CTX_check_private_key(ctx)) {
-		fprintf(stderr,
-				"Private key does not match the certificate public key\n");
+		fprintf(stderr, "Private key does not match the certificate public key\n");
 		exit(5);
 	}
+
 
 	/* ----------------------------------------------- */
 	/* Prepare TCP socket for receiving connections */
@@ -96,6 +92,7 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	err = bind(listen_sd, (struct sockaddr*) &sa_serv, sizeof(sa_serv));
 	CHK_ERR(err, "bind");
 
+
 	/* Receive a TCP connection. */
 
 	err = listen(listen_sd, 5);
@@ -106,8 +103,8 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	CHK_ERR(sd, "accept");
 	close(listen_sd);
 
-	printf("Connection from %lx, port %x\n", sa_cli.sin_addr.s_addr,
-			sa_cli.sin_port);
+	printf("Connection from %lx, port %x\n", sa_cli.sin_addr.s_addr, sa_cli.sin_port);
+
 
 	/* ----------------------------------------------- */
 	/* TCP connection is ready. Do server side SSL. */
@@ -118,16 +115,26 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	err = SSL_accept(ssl);
 	CHK_SSL(err);
 
+
+
+
 	/* DATA EXCHANGE - Receive message and send reply. */
 
+	// ---------------------- Receive a packet ----------------------
+	// Read the client packet. This packet may have:
+	// authentication fail message if the client cannot verify the server
+	// Or the packet may have key + login info if the client verified the server
 	err = SSL_read(ssl, buf, sizeof(buf) - 1);
 	CHK_SSL(err);
 
-	if (err <= 2 && buf[0] == 0 && buf[1] == 0){
+	// If the packet has authentication fail message kill everything and end the program
+	if (err <= 2 && buf[0] == 0 && buf[1] == 0) {
 		printf("Server common name cannot be verified\n");
 		kill(child_pid, SIGKILL);
 		exit(1);
 	}
+
+	// If the client verified the server correctly then we will have key + login info in the received packet
 
 	// Extract the data from the received buffer
 	unsigned char key[KEY_LEN];
@@ -141,13 +148,15 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	userpass[userpass_len] = '\0';
 	memset(buf, 0, BUFFER_SIZE);
 
-
-
 	// userpass contains username and password like this username:password
 	int user_pass_verified = verifiy_user_pass(userpass, userpass_len);
 
+
+	// ---------------------- Send a packet ----------------------
+	// If the server was able to verify the login info, send authentication success message to the client
+	// otherwise, send authentication failed and kill everything
 	buf[0] = 0;
-	if (user_pass_verified == 1){
+	if (user_pass_verified == 1) {
 		buf[1] = 1;
 	} else {
 		buf[1] = 0;
@@ -156,29 +165,19 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	err = SSL_write(ssl, buf, BUFFER_SIZE_MESSAGE);
 	CHK_SSL(err);
 
-	if (user_pass_verified == 0){
+
+	if (user_pass_verified == 0) {
 		printf("Wrong username or password. \n");
 		kill(child_pid, SIGKILL);
 		exit(1);
 	} else {
-		printf("TCP Connection successful. \n");
+		printf("TCP connection established. \n");
 	}
 
 
 
 
-
-//	// Send a message to the pipe to inform the UDP program to know whether to continue or not
-//	buf[0] = 0;
-//	if (user_pass_verified == 1){
-//		buf[1] = 1;
-//	} else {
-//		buf[1] = 0;
-//	}
-//	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
-
-
-	// Send the key to the pipe
+	// Send the key to the pipe (UPD process)
 	index = 0;
 	buf[0] = 1;
 	index++;
@@ -188,19 +187,19 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 
 
 
+	// Go to infinite loop to listen to the user control commands that come from the client's TCP process
 	sleep(1);
-	while(1) {
-
-
-
+	while (1) {
 		printf("waiting for input from the client \n");
 		memset(buf, 0, BUFFER_SIZE);
-		err = SSL_read (ssl, buf, BUFFER_SIZE_MESSAGE);
-	  CHK_SSL(err);
+		err = SSL_read(ssl, buf, BUFFER_SIZE_MESSAGE);
+		CHK_SSL(err);
 		index = 0;
-	  if (buf[0] == 1){
-		  printf ("Got key update message \n");
-		  index++;
+
+		// If the server got key update message
+		if (buf[0] == 1) {
+			printf("Got key update message \n");
+			index++;
 			memcpy(&key[0], &buf[index], KEY_LEN);
 			index += KEY_LEN;
 
@@ -211,27 +210,24 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 			memcpy(&buf[index], &key[0], KEY_LEN);
 			index += KEY_LEN;
 			write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
-	  }
-	  else if (buf[0] == 2){
-		  printf ("Got shutdown message \n");
-		  kill(child_pid, SIGKILL);
-		  break;
-	  } else {
-		  printf ("Got unrecognized message \n");
-		  kill(child_pid, SIGKILL);
-		  break;
-	  }
+
+		// If the server got shutdown message
+		} else if (buf[0] == 2) {
+			printf("Got shutdown message \n");
+			kill(child_pid, SIGKILL);
+			break;
+		} else {
+			printf("Got unrecognized message \n");
+			kill(child_pid, SIGKILL);
+			break;
+		}
 	}
-
-
 
 	/* Clean up. */
 
 	close(sd);
 	SSL_free(ssl);
 	SSL_CTX_free(ctx);
-
-
 
 	return 0;
 }
@@ -254,7 +250,6 @@ int verifiy_user_pass(char userpass[], int userpass_len) {
 	index += password_len;
 	password[password_len] = '\0';
 
-
 	// Open the shadow file that contains the login info
 	FILE * shadow_file;
 	char * username_shadow_string = NULL;
@@ -265,8 +260,9 @@ int verifiy_user_pass(char userpass[], int userpass_len) {
 	ssize_t hash_shadow_string_ln = 0;
 	size_t len = 0;
 	shadow_file = fopen(SHADOW_FILE_PATH, "r");
-	if (shadow_file == NULL)
+	if (shadow_file == NULL){
 		exit(EXIT_FAILURE);
+	}
 
 	// loop through the shadow file by reading 3 lines at a time (username, salt, hashed password)
 	while ((username_shadow_string_ln = getline(&username_shadow_string, &len, shadow_file)) != -1) {
@@ -277,18 +273,17 @@ int verifiy_user_pass(char userpass[], int userpass_len) {
 		hash_shadow_string_ln--;
 		username_shadow_string[username_shadow_string_ln] = '\0';
 
-
 		// Convert hex strings to bytes array
 		unsigned char salt_shadow_bytearray[SALT_LN];
-		convert_hex_string_to_bytes_array (salt_shadow_string, salt_shadow_bytearray);
+		convert_hex_string_to_bytes_array(salt_shadow_string, salt_shadow_bytearray);
 		unsigned char hash_shadow_bytearray[HASH_LN];
-		convert_hex_string_to_bytes_array (hash_shadow_string, hash_shadow_bytearray);
+		convert_hex_string_to_bytes_array(hash_shadow_string, hash_shadow_bytearray);
 
 		// Compare the hash that we calculate from password and salt with the hash we get from the shadow file
 		unsigned char calculated_hash[HASH_LN];
 		calculate_sha256_hash_with_salt(salt_shadow_bytearray, SALT_LN, password, password_len, calculated_hash, NULL);
-		if (strcmp(username_shadow_string, username) == 0){
-			if (compare_buffers(calculated_hash, hash_shadow_bytearray, HASH_LN) == 1){
+		if (strcmp(username_shadow_string, username) == 0) {
+			if (compare_buffers(calculated_hash, hash_shadow_bytearray, HASH_LN) == 1) {
 				result = 1;
 			}
 			break;
