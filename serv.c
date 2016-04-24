@@ -123,6 +123,12 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	err = SSL_read(ssl, buf, sizeof(buf) - 1);
 	CHK_SSL(err);
 
+	if (err <= 2 && buf[0] == 0 && buf[1] == 0){
+		printf("Server common name cannot be verified\n");
+		kill(child_pid, SIGKILL);
+		exit(1);
+	}
+
 	// Extract the data from the received buffer
 	unsigned char key[KEY_LEN];
 	char userpass[BUFFER_SIZE_SMALL];
@@ -137,33 +143,39 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 
 
 
-	char* message;
 	// userpass contains username and password like this username:password
 	int user_pass_verified = verifiy_user_pass(userpass, userpass_len);
-	if (user_pass_verified == 0){
-		message = "Wrong username or password.";
-	} else {
-		message = "TCP Connection successful.";
-	}
-	printf("%s \n", message);
 
-	int message_len = strlen(message);
-
-	err = SSL_write(ssl, message, message_len);
-	CHK_SSL(err);
-
-
-
-
-
-	// Send a message to the pipe to inform the UDP program to know whether to continue or not
 	buf[0] = 0;
 	if (user_pass_verified == 1){
 		buf[1] = 1;
 	} else {
 		buf[1] = 0;
 	}
-	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+
+	err = SSL_write(ssl, buf, BUFFER_SIZE_MESSAGE);
+	CHK_SSL(err);
+
+	if (user_pass_verified == 0){
+		printf("Wrong username or password. \n");
+		kill(child_pid, SIGKILL);
+		exit(1);
+	} else {
+		printf("TCP Connection successful. \n");
+	}
+
+
+
+
+
+//	// Send a message to the pipe to inform the UDP program to know whether to continue or not
+//	buf[0] = 0;
+//	if (user_pass_verified == 1){
+//		buf[1] = 1;
+//	} else {
+//		buf[1] = 0;
+//	}
+//	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
 
 
 	// Send the key to the pipe

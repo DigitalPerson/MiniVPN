@@ -19,6 +19,7 @@
 #define HOME "./files/"
 /* Make these what you want for cert & key files */
 #define CACERT HOME "ca.crt"
+
 #define SERVER_PORT 1111
 #define KEY_LEN 16
 #define BUFFER_SIZE 4096
@@ -78,34 +79,40 @@ int startTCPClient(int pipe_fd[], int child_pid, char* server_ip, char* server_h
 	CHK_NULL(ssl);
 	SSL_set_fd(ssl, sd);
 
-	// SSL_connect is reposnisible for verifying:
+	// SSL_connect is responsible for verifying:
 	// 1. The effective date
 	// 2. Whether the server certificate is signed by an authorized CA
 	// 3. Whether the server is indeed the machine that the client wants to talk to
 	// (as opposed to a spoofed machine) (ie: server.crt and server.key matches). This also gets checked by the the server code.
-	// Note that the function does not verifiy the common name
+	// Note that the function does not verify the common name
 
 	err = SSL_connect(ssl);
 	CHK_SSL(err);
 
-	int common_name_verified = verify_common_name(ssl, server_hostname);
-	if (common_name_verified == 0) {
-		printf("Server common name can not be verified\n");
-		exit(1);
-	}
+
+
 
 
 	/* --------------------------------------------------- */
 	/* DATA EXCHANGE - Send a message and receive a reply. */
 
+	int common_name_verified = verify_common_name(ssl, server_hostname);
+	if (common_name_verified == 0){
+		printf("Server common name cannot be verified\n");
+		buf[0] = 0;
+		buf[1] = 0;
+		err = SSL_write(ssl, buf, 2);
+		CHK_SSL(err);
+		kill(child_pid, SIGKILL);
+		exit(1);
+
+	}
 	// Generate a secret key for the UDP tunnel encryption
 	unsigned char key[KEY_LEN];
 	generate_random_number(key, KEY_LEN);
 
 
 	// Get username and password from the user
-//	char username [] = "bilalo89";
-//	char password [] = "bilal";
 	char username [BUFFER_SIZE_SMALL];
 	printf("Enter username: ");
 	gets(username);
@@ -135,24 +142,32 @@ int startTCPClient(int pipe_fd[], int child_pid, char* server_ip, char* server_h
 	CHK_SSL(err);
 	memset(buf, 0, BUFFER_SIZE);
 
+
 	err = SSL_read(ssl, buf, sizeof(buf) - 1);
 	CHK_SSL(err);
-	buf[err] = '\0';
-	printf("%s\n", buf);
+
+    if (buf[0] == 0 && buf[1] == 1){
+    	printf("TCP Connection successful. \n");
+    } else {
+    	printf("Wrong username or password. \n");
+    	kill(child_pid, SIGKILL);
+    	exit(1);
+    }
+
 	memset(buf, 0, BUFFER_SIZE);
 
 
 
 
 
-	// Send a message to the pipe to inform the UDP program to know whether to continue or not
-	buf[0] = 0;
-	if (common_name_verified == 1){
-		buf[1] = 1;
-	} else {
-		buf[1] = 0;
-	}
-	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+//	// Send a message to the pipe to inform the UDP program to know whether to continue or not
+//	buf[0] = 0;
+//	if (common_name_verified == 1){
+//		buf[1] = 1;
+//	} else {
+//		buf[1] = 0;
+//	}
+//	write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
 
 
 	// Send the key to the pipe

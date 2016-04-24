@@ -97,11 +97,15 @@ int main(int argc, char *argv[])
 				server_ip = server_hostname;
 			} else {
 				char ip [BUFFER_SIZE_SMALL];
-				get_ip_from_hostname(server_hostname, ip);
-				server_ip = ip;
+				int host_exists = get_ip_from_hostname(server_hostname, ip);
+				if (host_exists == 1){
+					server_ip = ip;
+					printf("server ip = %s\n", server_ip);
+				} else {
+					printf("Cannot resolve this host name \n");
+					exit(1);
+				}
 			}
-			printf("server ip = %s\n", server_ip);
-
 			port = atoi(p+1);
 			PORT = 0;
 			break;
@@ -163,18 +167,21 @@ int main(int argc, char *argv[])
         close(pipe_fd[1]);
 
 
-        // Check the TCP program to see whether to continue or not (ie: authentication is successful ...)
-        // Note that read function will block until we get a decision from the TCP program
-        memset(buf, 0, BUFFER_SIZE);
-        read(pipe_fd[0], buf, BUFFER_SIZE_MESSAGE);
-        if (buf[0] == 0 && buf[1] == 1){
-        	printf("I accepted the other side verification, continues to the UDP program \n");
-        } else {
-        	printf("Something cannot be verified, exiting, cannot continues to the UDP program \n");
-        	exit(1);
-        }
+//        // Check the TCP program to see whether to continue or not (ie: authentication is successful ...)
+//        // Note that read function will block until we get a decision from the TCP program
+//        // usually if the authentication failed the child process (UDP program) will be killed by the TCP program
+//        // That means if we reached this point the authentication it correct for sure
+//        // However we do this: 1-just in case 2-to let the UDP program wait until the TCP authenticates
+//        memset(buf, 0, BUFFER_SIZE);
+//        read(pipe_fd[0], buf, BUFFER_SIZE_MESSAGE);
+//        if (buf[0] != 0 || buf[1] != 1){
+//        	printf("Something cannot be verified, exiting, cannot continues to the UDP program \n");
+//        	exit(1);
+//        }
 
         // Get the key from the TCP program
+        // Note that read function will block
+        // So the UDP program will wait untill it gets the key from the TCP program
         memset(buf, 0, BUFFER_SIZE);
         read(pipe_fd[0], buf, BUFFER_SIZE_MESSAGE);
         index = 0;
@@ -384,13 +391,20 @@ int process_buffer_after_receiving(unsigned char* buf, int buf_len, unsigned cha
 	return hmac_verifieing_result;
 }
 
-void get_ip_from_hostname(const char* hostname , char ip[])
-{
-    struct hostent *he;
-    struct in_addr **addr_list;
-    he = gethostbyname(hostname);
-    addr_list = (struct in_addr **) he->h_addr_list;
-    strcpy(ip, inet_ntoa(*addr_list[0]));
+int get_ip_from_hostname(const char* hostname , char ip[]){
+	struct hostent *he;
+	    struct in_addr **addr_list;
+	    int i;
+	    if ((he = gethostbyname(hostname)) == NULL){
+	        return 0;
+	    }
+	    addr_list = (struct in_addr **) he->h_addr_list;
+	    for(i = 0; addr_list[i] != NULL; i++){
+	        //Return the first one;
+	        strcpy(ip , inet_ntoa(*addr_list[i]) );
+	        return 1;
+	    }
+	    return 0;
 }
 
 void calculate_sha256_hmac(unsigned char inbuf[], int inlen, unsigned char outbuf[], int* outlen, unsigned char key[]) {
