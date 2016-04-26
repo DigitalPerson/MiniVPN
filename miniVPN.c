@@ -33,8 +33,15 @@
 #define BUFFER_SIZE_MESSAGE 100
 #define HMAC_LEN 32
 #define IV_LEN 16
+#define SEQ_NUM_LN 4
+#define SEQ_NUM_HISTORY_LN 100
 
 unsigned char key[KEY_LEN];
+int seq_num_index;
+unsigned long seq_num_send = 0;
+unsigned long seq_num_recv = 0;
+unsigned char seq_num_buf[SEQ_NUM_LN];
+unsigned long seq_num_history[SEQ_NUM_HISTORY_LN];
 unsigned char original_buf[BUFFER_SIZE];
 int original_buf_len;
 unsigned char modified_buf[BUFFER_SIZE];
@@ -222,6 +229,7 @@ int main(int argc, char *argv[]) {
 	/* The next loop would be the UDP channel built for the VPN
 	   So it will loop and select based on which file descriptor is ready (has data)*/
 
+	memset(seq_num_history, 0, SEQ_NUM_HISTORY_LN);
 	while (1) {
 		FD_ZERO(&fdset);
 		FD_SET(fd, &fdset);
@@ -302,6 +310,10 @@ void process_buffer_before_sending(unsigned char* buf, int buf_len,
 	index = 0;
 	memcpy(&modified_buf_without_hmac[index], &iv[0], IV_LEN);
 	index += IV_LEN;
+	seq_num_send++;
+	convert_long_to_bytes(seq_num_send, seq_num_buf);
+	memcpy(&modified_buf_without_hmac[index], &seq_num_buf[0], SEQ_NUM_LN);
+	index += SEQ_NUM_LN;
 	memcpy(&modified_buf_without_hmac[index], &encrypted_buf[0], encrypted_buf_len);
 	index += encrypted_buf_len;
 	modified_buf_without_hmac_len = index;
@@ -328,8 +340,20 @@ int process_buffer_after_receiving(unsigned char* buf, int buf_len,
 	memcpy(&iv[0], &buf[index], IV_LEN);
 	index += IV_LEN;
 
+	// Get the Sequence number (for replay attack)
+	memcpy(&seq_num_buf[0], &buf[index], SEQ_NUM_LN);
+	index += SEQ_NUM_LN;
+	seq_num_recv = convert_bytes_to_long(seq_num_buf);
+		//check if the sequence number has been received before
+	if (search_for_number_in_array(seq_num_history, SEQ_NUM_HISTORY_LN, seq_num_recv) == 1) {
+		printf("Sequence number received before\n");
+		exit(1);
+	}
+	seq_num_index = seq_num_recv % SEQ_NUM_HISTORY_LN;
+	seq_num_history[seq_num_index] = seq_num_recv;
+
 	// Get the encrypted buffer
-	encrypted_buf_len = buf_len - IV_LEN - HMAC_LEN;
+	encrypted_buf_len = buf_len - IV_LEN - SEQ_NUM_LN - HMAC_LEN;
 	memcpy(&encrypted_buf[0], &buf[index], encrypted_buf_len);
 	index += encrypted_buf_len;
 

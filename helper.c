@@ -171,3 +171,14 @@ unsigned long convert_bytes_to_long(unsigned char bytes[]) {
 	return n;
 }
 
+int search_for_number_in_array(long arr[], int len, long number){
+	int counter = 0;
+	int result = 0;
+	for (counter = 0; counter < len; counter++){
+		if (arr[counter] == number){
+			return 1;
+		}
+	}
+	return result;
+}
+
