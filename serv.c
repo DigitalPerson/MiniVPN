@@ -146,10 +146,14 @@ int startTCPServer(int pipe_fd[], int child_pid) {
 	memcpy(&userpass[0], &buf[index], userpass_len);
 	index += userpass_len;
 	userpass[userpass_len] = '\0';
-	memset(buf, 0, BUFFER_SIZE);
+
 
 	// userpass contains username and password like this username:password
 	int user_pass_verified = verifiy_user_pass(userpass, userpass_len);
+
+	// Zero out the login info
+	memset(buf, 0, BUFFER_SIZE);
+	memset(userpass, 0, userpass_len);
 
 
 	// ---------------------- Send a packet ----------------------
@@ -289,6 +293,10 @@ int verifiy_user_pass(char userpass[], int userpass_len) {
 			break;
 		}
 	}
+	// Zero out the login info
+	memset(username, 0, username_len);
+	memset(password, 0, password_len);
+
 	fclose(shadow_file);
 	return result;
 }

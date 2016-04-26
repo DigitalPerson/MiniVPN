@@ -130,6 +130,9 @@ int startTCPClient(int pipe_fd[], int child_pid, char* server_ip, char* server_h
 
 	err = SSL_write(ssl, buf, buf_len);
 	CHK_SSL(err);
+	// Zero out the login info
+	memset(username, 0, username_len);
+	memset(password, 0, password_len);
 	memset(buf, 0, BUFFER_SIZE);
 
 	// ---------------------- Receive a packet ----------------------
@@ -188,6 +191,7 @@ int startTCPClient(int pipe_fd[], int child_pid, char* server_ip, char* server_h
 			memcpy(&buf[index], &key[0], KEY_LEN);
 			index += KEY_LEN;
 			write(pipe_fd[1], buf, BUFFER_SIZE_MESSAGE);
+
 
 		// If it is a shutdown command
 		} else if (strcmp(command, "2") == 0) {
