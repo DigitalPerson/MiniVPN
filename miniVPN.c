@@ -38,6 +38,7 @@
 
 unsigned char key[KEY_LEN];
 int seq_num_index;
+unsigned long max_seq_num;
 unsigned long seq_num_send = 0;
 unsigned long seq_num_recv = 0;
 unsigned char seq_num_buf[SEQ_NUM_LN];
@@ -53,6 +54,7 @@ unsigned char hmac[HMAC_LEN];
 unsigned char modified_buf_without_hmac[BUFFER_SIZE];
 int modified_buf_without_hmac_len;
 unsigned char calulated_hmac[HMAC_LEN];
+
 
 void usage() {
 	fprintf(stderr, "Usage: minivpn [-s port|-c targetip:port] [-e]\n");
@@ -229,6 +231,7 @@ int main(int argc, char *argv[]) {
 	/* The next loop would be the UDP channel built for the VPN
 	   So it will loop and select based on which file descriptor is ready (has data)*/
 
+    max_seq_num = (unsigned long) pow(2, 8 * SEQ_NUM_LN);
 	memset(seq_num_history, 0, SEQ_NUM_HISTORY_LN);
 	while (1) {
 		FD_ZERO(&fdset);
@@ -311,6 +314,9 @@ void process_buffer_before_sending(unsigned char* buf, int buf_len,
 	memcpy(&modified_buf_without_hmac[index], &iv[0], IV_LEN);
 	index += IV_LEN;
 	seq_num_send++;
+    if (seq_num_send >= max_seq_num){
+    	seq_num_send = 1;
+    }
 	convert_long_to_bytes(seq_num_send, seq_num_buf);
 	memcpy(&modified_buf_without_hmac[index], &seq_num_buf[0], SEQ_NUM_LN);
 	index += SEQ_NUM_LN;
