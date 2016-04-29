@@ -176,6 +176,9 @@ int main(int argc, char *argv[]) {
 			index++;
 			memcpy(&key[0], &buf[index], KEY_LEN);
 			index += KEY_LEN;
+		} else {
+			printf("Something went wrong... Please kill processes manually on both sides then retry \n");
+			exit(1);
 		}
 
 	} else {
