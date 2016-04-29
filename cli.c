@@ -14,6 +14,7 @@
 #include <openssl/err.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <termios.h>
 
 /* Define HOME to be dir for key and cert files... */
 #define HOME "./files/"
@@ -112,7 +113,11 @@ int startTCPClient(int pipe_fd[], int child_pid, char* server_ip, char* server_h
 	gets(username);
 	char password[BUFFER_SIZE_SMALL];
 	printf("Enter password: ");
-	gets(password);
+
+	//gets(password);
+	get_password(password);
+	printf("\n ");
+
 	int username_len = strlen(username);
 	int password_len = strlen(password);
 
@@ -244,4 +249,31 @@ int verify_common_name(SSL* ssl, char* server_name) {
 
 	OPENSSL_free(cert_server_common_name);
 	return result;
+}
+
+void get_password(char password[])
+{
+    static struct termios oldt, newt;
+    int i = 0;
+    int c;
+
+    /*saving the old settings of STDIN_FILENO and copy settings for resetting*/
+    tcgetattr( STDIN_FILENO, &oldt);
+    newt = oldt;
+
+    /*setting the approriate bit in the termios struct*/
+    newt.c_lflag &= ~(ECHO);
+
+    /*setting the new bits*/
+    tcsetattr( STDIN_FILENO, TCSANOW, &newt);
+
+    /*reading the password from the console*/
+    while ((c = getchar())!= '\n' && c != EOF && i < BUFFER_SIZE_SMALL){
+        password[i++] = c;
+    }
+    password[i] = '\0';
+
+    /*resetting our old STDIN_FILENO*/
+    tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
+
 }
